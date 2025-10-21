@@ -83,6 +83,7 @@ class ApiClient {
     const adminToken = localStorage.getItem('adminToken');
     
     const config: RequestInit = {
+      method: options.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
         ...(adminToken && { 'Authorization': `Bearer ${adminToken}` }),
@@ -240,6 +241,25 @@ class ApiClient {
   async getAdminDashboardStats(): Promise<ApiResponse<any>> {
     return this.request<any>('/admin/dashboard-stats');
   }
+
+  // Admin Password Reset API
+  async adminForgotPassword(email: string): Promise<ApiResponse<null>> {
+    const body = JSON.stringify({ email });
+    console.log('Forgot password request body:', body);
+    return this.request<null>('/admin/forgot-password', {
+      method: 'POST',
+      body: body,
+    });
+  }
+
+  async adminResetPassword(oldPassword: string, newPassword: string): Promise<ApiResponse<{ note: string }>> {
+    const body = JSON.stringify({ oldPassword, newPassword });
+    console.log('Reset password request body:', body);
+    return this.request<{ note: string }>('/admin/reset-password', {
+      method: 'POST',
+      body: body,
+    });
+  }
 }
 
 // Create and export API client instance
@@ -284,4 +304,6 @@ export const adminApi = {
   getUsers: () => apiClient.getAdminUsers(),
   getLoans: () => apiClient.getAdminLoans(),
   getDashboardStats: () => apiClient.getAdminDashboardStats(),
+  forgotPassword: (email: string) => apiClient.adminForgotPassword(email),
+  resetPassword: (oldPassword: string, newPassword: string) => apiClient.adminResetPassword(oldPassword, newPassword),
 };

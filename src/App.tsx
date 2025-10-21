@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { validateEnv } from "@/config/env";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
@@ -45,6 +47,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route
             path="/*"
@@ -60,6 +63,7 @@ const App = () => (
             <Route path="loan-requests" element={<LoanRequests />} />
             <Route path="business-management" element={<BusinessManagement />} />
             <Route path="leads-management" element={<LeadsManagement />} />
+            <Route path="reset-password" element={<ResetPassword />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -9,7 +9,8 @@ import {
   BarChart3, 
   LogOut,
   Building,
-  UserCheck
+  UserCheck,
+  Key
 } from 'lucide-react';
 import {
   Sidebar,
@@ -87,7 +88,19 @@ const AppSidebar = () => {
 
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild
+                  tooltip={state === 'collapsed' ? 'Change Password' : undefined}
+                  className="w-full justify-start"
+                >
+                  <NavLink to="/reset-password" className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
+                    <Key className="h-4 w-4" />
+                    <span className="text-sm font-medium">Change Password</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={handleLogout} 
