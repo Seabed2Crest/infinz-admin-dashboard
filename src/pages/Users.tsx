@@ -197,7 +197,7 @@ const Users = () => {
               <List className="h-4 w-4" />
             </ToggleGroupItem>
           </ToggleGroup>
-          <Button>Add New User</Button>
+          {/* <Button>Add New User</Button> */}
         </div>
       </div>
 
@@ -238,10 +238,10 @@ const Users = () => {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" className="w-full">
+            {/* <Button variant="outline" className="w-full">
               <Filter className="h-4 w-4 mr-2" />
               Advanced Filters
-            </Button>
+            </Button> */}
           </div>
         </CardContent>
       </Card>
