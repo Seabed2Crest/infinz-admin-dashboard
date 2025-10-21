@@ -54,7 +54,6 @@ const Login = () => {
               className="h-16 w-auto"
             />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">INFINZ Admin</h1>
           <p className="text-gray-600 mt-2">Secure admin portal</p>
         </div>
 

@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:8085/api/v1';
+const API_BASE_URL = 'https://backend.infinz.seabed2crest.com/api/v1';
 
 // Types
 export interface EmploymentDetails {
