@@ -27,7 +27,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy custom nginx configuration
 COPY <<EOF /etc/nginx/conf.d/default.conf
 server {
-    listen 80;
+    listen 5001;
     server_name localhost;
     root /usr/share/nginx/html;
     index index.html;
@@ -57,8 +57,8 @@ server {
 }
 EOF
 
-# Expose port 80
-EXPOSE 80
+# Expose port 5001
+EXPOSE 5001
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
