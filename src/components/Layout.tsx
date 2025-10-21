@@ -48,33 +48,35 @@ const AppSidebar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <Sidebar className="fixed left-0 top-0 h-screen border-r z-50">
-      <SidebarHeader className="border-b p-4">
+    <Sidebar className="border-r">
+      <SidebarHeader className="border-b p-4 h-16 flex items-center">
         <div className="flex items-center space-x-2">
           <img 
             src={infinzLogo} 
             alt="INFINZ Logo" 
             className="h-8 w-auto"
           />
-         
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="px-2 py-4">
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Navigation
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton 
                     asChild 
                     isActive={isActive(item.path)}
                     tooltip={state === 'collapsed' ? item.label : undefined}
+                    className="w-full justify-start"
                   >
-                    <NavLink to={item.path} className="flex items-center gap-3">
+                    <NavLink to={item.path} className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
                       <item.icon className="h-4 w-4" />
-                      <span>{item.label}</span>
+                      <span className="text-sm font-medium">{item.label}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -87,9 +89,13 @@ const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleLogout} tooltip={state === 'collapsed' ? 'Logout' : undefined}>
+                <SidebarMenuButton 
+                  onClick={handleLogout} 
+                  tooltip={state === 'collapsed' ? 'Logout' : undefined}
+                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
                   <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
+                  <span className="text-sm font-medium">Logout</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -118,10 +124,10 @@ const Layout = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         
-        <SidebarInset className="flex flex-col ml-0">
-          {/* Fixed Header */}
-          <header className="fixed top-0 right-0 left-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-6 py-4">
-            <div className="flex items-center justify-between">
+        <SidebarInset className="flex flex-col w-full">
+          {/* Fixed Header - properly positioned to account for sidebar */}
+          <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-6 py-4 h-16 flex items-center">
+            <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-4">
                 <SidebarTrigger />
               </div>
@@ -134,8 +140,8 @@ const Layout = () => {
             </div>
           </header>
 
-          {/* Page Content with top padding to account for fixed header */}
-          <main className="flex-1 pl-2 pr-6 py-6 pt-20">
+          {/* Page Content with proper spacing */}
+          <main className="flex-1 px-6 py-6">
             <Outlet />
           </main>
         </SidebarInset>
