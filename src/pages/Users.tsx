@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Search, Filter, Eye, MapPin, Calendar, DollarSign, Grid3X3, List, Loader2 } from 'lucide-react';
+import { Search, Filter, Eye, MapPin, Calendar, IndianRupee, Grid3X3, List, Loader2 } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 
 const Users = () => {
@@ -53,7 +53,7 @@ const Users = () => {
                          user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.phoneNumber?.includes(searchTerm);
     const matchesStatus = statusFilter === 'all' || (user.isVerified ? 'active' : 'inactive') === statusFilter;
-    const matchesLocation = locationFilter === 'all' || user.state === locationFilter;
+    const matchesLocation = locationFilter === 'all' || user.pinCode === locationFilter;
     
     return matchesSearch && matchesStatus && matchesLocation;
   });
@@ -62,7 +62,7 @@ const Users = () => {
     return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
   };
 
-  const locations = [...new Set(users.map(user => user.state).filter(Boolean))];
+  const locations = [...new Set(users.map(user => user.pinCode).filter(Boolean))];
 
   const renderCardView = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -91,18 +91,18 @@ const Users = () => {
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="flex items-center text-sm text-gray-600">
                 <MapPin className="h-4 w-4 mr-2" />
-                {user.state || 'Unknown'}
+                {user.pinCode || 'Unknown'}
               </div>
               <div className="flex items-center text-sm text-gray-600">
                 <Calendar className="h-4 w-4 mr-2" />
                 {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
               </div>
               <div className="flex items-center text-sm text-gray-600">
-                <DollarSign className="h-4 w-4 mr-2" />
+                <IndianRupee className="h-4 w-4 mr-2" />
                 {user.role || 'user'}
               </div>
               <div className="text-sm text-gray-600">
-                {user.loanRequests || 0} loan{(user.loanRequests || 0) !== 1 ? 's' : ''}
+                {user.authProvider || 'phone'}
               </div>
             </div>
 
@@ -126,11 +126,11 @@ const Users = () => {
         <TableRow>
           <TableHead>User</TableHead>
           <TableHead>Contact</TableHead>
-          <TableHead>Location</TableHead>
+          <TableHead>Pin Code</TableHead>
           <TableHead>Join Date</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead>Total Amount</TableHead>
-          <TableHead>Loans</TableHead>
+          <TableHead>Role</TableHead>
+          <TableHead>Auth Provider</TableHead>
           <TableHead>Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -141,28 +141,30 @@ const Users = () => {
               <div className="flex items-center space-x-3">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={`/placeholder-${user._id}.jpg`} />
-                  <AvatarFallback className="bg-blue-100 text-blue-700">{user.avatar}</AvatarFallback>
+                  <AvatarFallback className="bg-blue-100 text-blue-700">
+                    {user.fullName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">{user.name}</p>
+                  <p className="font-medium">{user.fullName}</p>
                 </div>
               </div>
             </TableCell>
             <TableCell>
               <div>
                 <p className="text-sm">{user.email}</p>
-                <p className="text-sm text-gray-500">{user.phone}</p>
+                <p className="text-sm text-gray-500">{user.phoneNumber}</p>
               </div>
             </TableCell>
-            <TableCell>{user.location}</TableCell>
-            <TableCell>{user.joinDate}</TableCell>
+            <TableCell>{user.pinCode}</TableCell>
+            <TableCell>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}</TableCell>
             <TableCell>
-              <Badge className={getStatusColor(user.status)}>
-                {user.status}
+              <Badge className={getStatusColor(user.isVerified ? 'active' : 'inactive')}>
+                {user.isVerified ? 'Active' : 'Inactive'}
               </Badge>
             </TableCell>
-            <TableCell>${user.totalAmount.toLocaleString()}</TableCell>
-            <TableCell>{user.totalLoans}</TableCell>
+            <TableCell>{user.role}</TableCell>
+            <TableCell>{user.authProvider}</TableCell>
             <TableCell>
               <Button 
                 variant="ghost" 

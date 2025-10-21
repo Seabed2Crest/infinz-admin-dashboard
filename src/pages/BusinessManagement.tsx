@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Loader2, Plus, Building, DollarSign, Phone, Calendar, Edit, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Building, IndianRupee, Phone, Calendar, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { businessApi, Business } from '@/lib/api';
 
@@ -264,7 +264,7 @@ const BusinessManagementPage = () => {
                   {formatCurrency(businesses.reduce((sum, b) => sum + parseInt(b.loanAmount), 0).toString())}
                 </p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-600" />
+              <IndianRupee className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -281,7 +281,7 @@ const BusinessManagementPage = () => {
                   }
                 </p>
               </div>
-              <DollarSign className="h-8 w-8 text-purple-600" />
+              <IndianRupee className="h-8 w-8 text-purple-600" />
             </div>
           </CardContent>
         </Card>

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, CreditCard, Clock, CheckCircle, XCircle, DollarSign, Loader2 } from 'lucide-react';
+import { Users, CreditCard, Clock, CheckCircle, XCircle, IndianRupee, Loader2 } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 
 const Dashboard = () => {
@@ -43,7 +43,7 @@ const Dashboard = () => {
       title: 'Total Amount',
       value: `₹${dashboardData.data.totalAmount?.toLocaleString() || '0'}`,
       change: '+25%',
-      icon: DollarSign,
+      icon: IndianRupee,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100'
     }

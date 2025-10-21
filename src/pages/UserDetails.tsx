@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ArrowLeft, Download, Eye, CheckCircle, XCircle, Clock, DollarSign, Grid3X3, List, User, Mail, Phone, MapPin, Calendar, Shield, Briefcase, Building, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Eye, CheckCircle, XCircle, Clock, IndianRupee, Grid3X3, List, User, Mail, Phone, MapPin, Calendar, Shield, Briefcase, Building, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +31,7 @@ const UserDetails = () => {
   // Fetch user's employment details (if available)
   const { data: employmentData, isLoading: employmentLoading } = useQuery({
     queryKey: ['employment-details', userId],
-    queryFn: () => employmentApi.get(),
+    queryFn: () => employmentApi.getForUser(userId),
     enabled: !!userId,
     retry: 2,
   });
@@ -256,7 +256,7 @@ const UserDetails = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
                     <p className="text-2xl font-bold text-blue-600">
-                      {user.loanRequests || 0}
+                      {loans.length}
                     </p>
                     <p className="text-sm text-blue-600">Total Loan Requests</p>
                   </div>
@@ -291,7 +291,7 @@ const UserDetails = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
+                  <IndianRupee className="h-5 w-5" />
                   Current Employment Status
                 </CardTitle>
               </CardHeader>
@@ -501,7 +501,7 @@ const UserDetails = () => {
                 )
               ) : (
                 <div className="text-center py-8">
-                  <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <IndianRupee className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500">No loan applications found</p>
                   <p className="text-sm text-gray-400">This user hasn't applied for any loans yet</p>
                 </div>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -32,8 +31,8 @@ const menuItems = [
   { icon: BarChart3, label: 'Dashboard', path: '/dashboard' },
   { icon: Users, label: 'Users', path: '/users' },
   { icon: CreditCard, label: 'Loan Requests', path: '/loan-requests' },
-  { icon: Building, label: 'Business Management', path: '/business-management' },
-  { icon: UserCheck, label: 'Leads Management', path: '/leads-management' },
+  // { icon: Building, label: 'Business Management', path: '/business-management' },
+  { icon: UserCheck, label: 'Leads', path: '/leads-management' },
 ];
 
 const AppSidebar = () => {
@@ -57,9 +56,7 @@ const AppSidebar = () => {
             alt="INFINZ Logo" 
             className="h-8 w-auto"
           />
-          {state === 'expanded' && (
-            <h2 className="font-bold text-xl text-foreground">INFINZ</h2>
-          )}
+         
         </div>
       </SidebarHeader>
 
@@ -121,15 +118,12 @@ const Layout = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         
-        <SidebarInset className="flex flex-col ml-16">
+        <SidebarInset className="flex flex-col ml-0">
           {/* Fixed Header */}
-          <header className="fixed top-0 right-0 left-16 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-6 py-4">
+          <header className="fixed top-0 right-0 left-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <SidebarTrigger />
-                <h1 className="text-2xl font-semibold text-foreground">
-                  {getCurrentPageTitle()}
-                </h1>
               </div>
               <div className="flex items-center space-x-4">
                 <Avatar>
@@ -141,7 +135,7 @@ const Layout = () => {
           </header>
 
           {/* Page Content with top padding to account for fixed header */}
-          <main className="flex-1 p-6 pt-20">
+          <main className="flex-1 pl-2 pr-6 py-6 pt-20">
             <Outlet />
           </main>
         </SidebarInset>

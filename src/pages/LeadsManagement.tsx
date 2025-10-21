@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Plus, Users, DollarSign, Phone, Calendar, Edit, Search, Filter, MapPin } from 'lucide-react';
+import { Loader2, Plus, Users, IndianRupee, Phone, Calendar, Edit, Search, Filter, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { leadsApi, Lead } from '@/lib/api';
 
@@ -358,7 +358,7 @@ const LeadsManagementPage = () => {
                   {leads.filter(l => l.status.toLowerCase() === 'approved').length}
                 </p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-600" />
+              <IndianRupee className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -372,7 +372,7 @@ const LeadsManagementPage = () => {
                   {formatCurrency(leads.reduce((sum, l) => sum + parseInt(l.amount), 0).toString())}
                 </p>
               </div>
-              <DollarSign className="h-8 w-8 text-purple-600" />
+              
             </div>
           </CardContent>
         </Card>

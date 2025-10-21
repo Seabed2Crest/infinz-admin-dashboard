@@ -117,11 +117,6 @@ const Login = () => {
               </Button>
             </form>
 
-            <div className="mt-6 p-4 bg-primary/10 rounded-lg">
-              <p className="text-sm text-primary font-medium">Admin Credentials:</p>
-              <p className="text-sm text-primary/80">Use the admin email and password configured in your backend environment variables</p>
-              <p className="text-xs text-primary/60 mt-2">Check your .env file for ADMIN_EMAIL and ADMIN_PASSWORD</p>
-            </div>
           </CardContent>
         </Card>
       </div>

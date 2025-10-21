@@ -1,90 +1,37 @@
-
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, Filter, Eye, DollarSign, Calendar, User, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Search, Filter, Eye, IndianRupee, Calendar, User, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
+import { adminApi } from '@/lib/api';
 
 const LoanRequests = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [amountRange, setAmountRange] = useState('all');
 
-  const loanRequests = [
-    {
-      id: 1,
-      user: { name: 'John Doe', avatar: 'JD', id: 1 },
-      amount: 15000,
-      purpose: 'Home Renovation',
-      status: 'pending',
-      requestDate: '2024-01-15',
-      interestRate: 5.5,
-      duration: 24,
-      creditScore: 720,
-      monthlyIncome: 4500
-    },
-    {
-      id: 2,
-      user: { name: 'Jane Smith', avatar: 'JS', id: 2 },
-      amount: 8500,
-      purpose: 'Medical Emergency',
-      status: 'approved',
-      requestDate: '2024-01-14',
-      interestRate: 4.8,
-      duration: 18,
-      creditScore: 780,
-      monthlyIncome: 5200
-    },
-    {
-      id: 3,
-      user: { name: 'Mike Johnson', avatar: 'MJ', id: 3 },
-      amount: 25000,
-      purpose: 'Business Expansion',
-      status: 'reviewing',
-      requestDate: '2024-01-14',
-      interestRate: null,
-      duration: 36,
-      creditScore: 690,
-      monthlyIncome: 6000
-    },
-    {
-      id: 4,
-      user: { name: 'Sarah Wilson', avatar: 'SW', id: 4 },
-      amount: 12000,
-      purpose: 'Debt Consolidation',
-      status: 'rejected',
-      requestDate: '2024-01-13',
-      interestRate: null,
-      duration: 24,
-      creditScore: 650,
-      monthlyIncome: 3800
-    },
-    {
-      id: 5,
-      user: { name: 'David Brown', avatar: 'DB', id: 5 },
-      amount: 18000,
-      purpose: 'Education',
-      status: 'approved',
-      requestDate: '2024-01-13',
-      interestRate: 5.2,
-      duration: 30,
-      creditScore: 750,
-      monthlyIncome: 4800
-    }
-  ];
+  // Fetch loan requests from API
+  const { data: loansData, isLoading: loansLoading, error: loansError } = useQuery({
+    queryKey: ['admin-loans'],
+    queryFn: () => adminApi.getLoans(),
+    retry: 2,
+  });
+
+  const loanRequests = (loansData?.data as any)?.loanRequests || [];
 
   const filteredRequests = loanRequests.filter(request => {
-    const matchesSearch = request.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.purpose.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (request.userId?.fullName || 'Unknown').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
     
     let matchesAmount = true;
     if (amountRange !== 'all') {
       const [min, max] = amountRange.split('-').map(Number);
-      matchesAmount = request.amount >= min && (max ? request.amount <= max : true);
+      const amount = parseFloat(request.desiredAmount) || 0;
+      matchesAmount = amount >= min && (max ? amount <= max : true);
     }
     
     return matchesSearch && matchesStatus && matchesAmount;
@@ -110,12 +57,12 @@ const LoanRequests = () => {
     }
   };
 
-  const handleApprove = (requestId: number) => {
+  const handleApprove = (requestId: string) => {
     console.log('Approving request:', requestId);
     // Handle approval logic here
   };
 
-  const handleReject = (requestId: number) => {
+  const handleReject = (requestId: string) => {
     console.log('Rejecting request:', requestId);
     // Handle rejection logic here
   };
@@ -123,11 +70,7 @@ const LoanRequests = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Loan Requests</h2>
-          <p className="text-gray-600">Review and manage all loan applications</p>
-        </div>
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-end">
         <div className="flex gap-2">
           <Button variant="outline">Export Data</Button>
           <Button>Bulk Actions</Button>
@@ -141,7 +84,9 @@ const LoanRequests = () => {
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-yellow-600" />
               <div>
-                <p className="text-2xl font-bold">24</p>
+                <p className="text-2xl font-bold">
+                  {loansLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : loanRequests.filter(r => r.status === 'pending').length}
+                </p>
                 <p className="text-sm text-gray-600">Pending</p>
               </div>
             </div>
@@ -152,7 +97,9 @@ const LoanRequests = () => {
             <div className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-2xl font-bold">156</p>
+                <p className="text-2xl font-bold">
+                  {loansLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : loanRequests.filter(r => r.status === 'approved').length}
+                </p>
                 <p className="text-sm text-gray-600">Approved</p>
               </div>
             </div>
@@ -163,7 +110,9 @@ const LoanRequests = () => {
             <div className="flex items-center gap-2">
               <XCircle className="h-5 w-5 text-red-600" />
               <div>
-                <p className="text-2xl font-bold">32</p>
+                <p className="text-2xl font-bold">
+                  {loansLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : loanRequests.filter(r => r.status === 'rejected').length}
+                </p>
                 <p className="text-sm text-gray-600">Rejected</p>
               </div>
             </div>
@@ -172,9 +121,13 @@ const LoanRequests = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-blue-600" />
+              <IndianRupee className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="text-2xl font-bold">$2.4M</p>
+                <p className="text-2xl font-bold">
+                  {loansLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : 
+                    `₹${(loanRequests.reduce((sum, loan) => sum + (parseFloat(loan.desiredAmount) || 0), 0) / 100000).toFixed(1)}L`
+                  }
+                </p>
                 <p className="text-sm text-gray-600">Total Amount</p>
               </div>
             </div>
@@ -215,10 +168,10 @@ const LoanRequests = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Amounts</SelectItem>
-                <SelectItem value="0-10000">$0 - $10k</SelectItem>
-                <SelectItem value="10000-20000">$10k - $20k</SelectItem>
-                <SelectItem value="20000-50000">$20k - $50k</SelectItem>
-                <SelectItem value="50000">$50k+</SelectItem>
+                <SelectItem value="0-10000">₹0 - ₹10k</SelectItem>
+                <SelectItem value="10000-20000">₹10k - ₹20k</SelectItem>
+                <SelectItem value="20000-50000">₹20k - ₹50k</SelectItem>
+                <SelectItem value="50000">₹50k+</SelectItem>
               </SelectContent>
             </Select>
 
@@ -231,86 +184,104 @@ const LoanRequests = () => {
       </Card>
 
       {/* Loan Requests List */}
-      <div className="space-y-4">
-        {filteredRequests.map((request) => (
-          <Card key={request.id} className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={`/placeholder-${request.user.id}.jpg`} />
-                    <AvatarFallback className="bg-blue-100 text-blue-700">{request.user.avatar}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{request.user.name}</h3>
-                    <p className="text-sm text-gray-600">{request.purpose}</p>
-                    <p className="text-2xl font-bold text-blue-600">${request.amount.toLocaleString()}</p>
+      {loansLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading loan requests...</span>
+        </div>
+      ) : loansError ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <p className="text-red-500">Failed to load loan requests. Please try again.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredRequests.map((request) => (
+            <Card key={request._id} className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-4">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src="/placeholder-avatar.jpg" />
+                      <AvatarFallback className="bg-blue-100 text-blue-700">
+                        {(request.userId?.fullName || 'U').charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{request.userId?.fullName || 'Unknown User'}</h3>
+                      <p className="text-sm text-gray-600">{request.employmentType}</p>
+                      <p className="text-2xl font-bold text-blue-600">₹{parseFloat(request.desiredAmount || '0').toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge className={getStatusColor(request.status)}>
+                      {getStatusIcon(request.status)}
+                      <span className="ml-1">{request.status}</span>
+                    </Badge>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'Unknown date'}
+                    </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <Badge className={getStatusColor(request.status)}>
-                    {getStatusIcon(request.status)}
-                    <span className="ml-1">{request.status}</span>
-                  </Badge>
-                  <p className="text-sm text-gray-600 mt-1">{request.requestDate}</p>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                <div>
-                  <p className="text-sm text-gray-600">Duration</p>
-                  <p className="font-medium">{request.duration} months</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Employment Type</p>
+                    <p className="font-medium capitalize">{request.employmentType}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Monthly Income</p>
+                    <p className="font-medium">₹{request.netMonthlyIncome}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Company</p>
+                    <p className="font-medium">{request.companyOrBusinessName || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Payment Mode</p>
+                    <p className="font-medium">{request.paymentMode || 'N/A'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Interest Rate</p>
-                  <p className="font-medium">{request.interestRate ? `${request.interestRate}%` : 'TBD'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Credit Score</p>
-                  <p className="font-medium">{request.creditScore}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Monthly Income</p>
-                  <p className="font-medium">${request.monthlyIncome.toLocaleString()}</p>
-                </div>
-              </div>
 
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Details
-                </Button>
-                {request.status === 'pending' && (
-                  <>
-                    <Button 
-                      size="sm" 
-                      className="bg-green-600 hover:bg-green-700"
-                      onClick={() => handleApprove(request.id)}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Approve
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="text-red-600 border-red-200 hover:bg-red-50"
-                      onClick={() => handleReject(request.id)}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Reject
-                    </Button>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm">
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Details
+                  </Button>
+                  {request.status === 'pending' && (
+                    <>
+                      <Button 
+                        size="sm" 
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={() => handleApprove(request._id)}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Approve
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                        onClick={() => handleReject(request._id)}
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      {filteredRequests.length === 0 && (
+      {!loansLoading && !loansError && filteredRequests.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
             <p className="text-gray-500">No loan requests found matching your criteria.</p>
+            <p className="text-sm text-gray-400 mt-2">Total requests in database: {loanRequests.length}</p>
           </CardContent>
         </Card>
       )}

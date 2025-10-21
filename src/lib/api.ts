@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'https://backend.infinz.seabed2crest.com/api/v1';
+const API_BASE_URL = 'http://localhost:8085/api/v1';
 
 // Types
 export interface EmploymentDetails {
@@ -114,6 +114,18 @@ class ApiClient {
 
   async updateEmploymentDetails(data: Partial<EmploymentDetails>): Promise<ApiResponse<EmploymentDetails>> {
     return this.request<EmploymentDetails>('/employment-details/', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Admin Employment Details API
+  async getEmploymentDetailsForUser(userId: string): Promise<ApiResponse<EmploymentDetails>> {
+    return this.request<EmploymentDetails>(`/admin/employment-details/${userId}`);
+  }
+
+  async updateEmploymentDetailsForUser(userId: string, data: Partial<EmploymentDetails>): Promise<ApiResponse<EmploymentDetails>> {
+    return this.request<EmploymentDetails>(`/admin/employment-details/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -237,6 +249,9 @@ export const apiClient = new ApiClient(API_BASE_URL);
 export const employmentApi = {
   get: () => apiClient.getEmploymentDetails(),
   update: (data: Partial<EmploymentDetails>) => apiClient.updateEmploymentDetails(data),
+  // Admin functions
+  getForUser: (userId: string) => apiClient.getEmploymentDetailsForUser(userId),
+  updateForUser: (userId: string, data: Partial<EmploymentDetails>) => apiClient.updateEmploymentDetailsForUser(userId, data),
 };
 
 export const businessApi = {

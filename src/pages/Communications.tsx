@@ -34,7 +34,7 @@ const Communications = () => {
       name: 'Payment Reminder',
       type: 'sms',
       subject: '',
-      content: 'Hi {name}, your payment of ${amount} is due on {date}. Please make payment to avoid late fees.',
+      content: 'Hi {name}, your payment of ₹{amount} is due on {date}. Please make payment to avoid late fees.',
       userType: 'active',
       createdDate: '2024-01-08'
     },
