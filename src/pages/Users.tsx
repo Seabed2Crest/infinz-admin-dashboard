@@ -1,27 +1,56 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Search, Filter, Eye, MapPin, Calendar, IndianRupee, Grid3X3, List, Loader2 } from 'lucide-react';
-import { adminApi } from '@/lib/api';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { downloadCsv } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Search,
+  Filter,
+  Eye,
+  MapPin,
+  Calendar,
+  IndianRupee,
+  Grid3X3,
+  List,
+  Loader2,
+} from "lucide-react";
+import { adminApi } from "@/lib/api";
+import config from "@/config/env";
 
 const Users = () => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [locationFilter, setLocationFilter] = useState('all');
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
+  const [viewMode, setViewMode] = useState<"card" | "table">("card");
 
   // Fetch users from backend
-  const { data: usersData, isLoading, error } = useQuery({
-    queryKey: ['admin-users'],
+  const {
+    data: usersData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["admin-users"],
     queryFn: adminApi.getUsers,
     retry: 2,
   });
@@ -48,21 +77,32 @@ const Users = () => {
     );
   }
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.phoneNumber?.includes(searchTerm);
-    const matchesStatus = statusFilter === 'all' || (user.isVerified ? 'active' : 'inactive') === statusFilter;
-    const matchesLocation = locationFilter === 'all' || user.pinCode === locationFilter;
-    
+
+
+
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.phoneNumber?.includes(searchTerm);
+    const matchesStatus =
+      statusFilter === "all" ||
+      (user.isVerified ? "active" : "inactive") === statusFilter;
+    const matchesLocation =
+      locationFilter === "all" || user.pinCode === locationFilter;
+
     return matchesSearch && matchesStatus && matchesLocation;
   });
 
   const getStatusColor = (status: string) => {
-    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+    return status === "active"
+      ? "bg-green-100 text-green-800"
+      : "bg-gray-100 text-gray-800";
   };
 
-  const locations = [...new Set(users.map(user => user.pinCode).filter(Boolean))];
+  const locations = [
+    ...new Set(users.map((user) => user.pinCode).filter(Boolean)),
+  ];
 
   const renderCardView = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -74,40 +114,56 @@ const Users = () => {
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={`/placeholder-${user._id}.jpg`} />
                   <AvatarFallback className="bg-blue-100 text-blue-700">
-                    {user.fullName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                    {user.fullName
+                      ?.split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{user.fullName || 'Unknown User'}</h3>
-                  <p className="text-sm text-gray-600">{user.email || 'No email'}</p>
-                  <p className="text-sm text-gray-500">{user.phoneNumber || 'No phone'}</p>
+                  <h3 className="font-semibold text-gray-900">
+                    {user.fullName || "Unknown User"}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {user.email || "No email"}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {user.phoneNumber || "No phone"}
+                  </p>
                 </div>
               </div>
-              <Badge className={getStatusColor(user.isVerified ? 'active' : 'inactive')}>
-                {user.isVerified ? 'Active' : 'Inactive'}
+              <Badge
+                className={getStatusColor(
+                  user.isVerified ? "active" : "inactive"
+                )}
+              >
+                {user.isVerified ? "Active" : "Inactive"}
               </Badge>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="flex items-center text-sm text-gray-600">
                 <MapPin className="h-4 w-4 mr-2" />
-                {user.pinCode || 'Unknown'}
+                {user.pinCode || "Unknown"}
               </div>
               <div className="flex items-center text-sm text-gray-600">
                 <Calendar className="h-4 w-4 mr-2" />
-                {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
+                {user.createdAt
+                  ? new Date(user.createdAt).toLocaleDateString()
+                  : "Unknown"}
               </div>
               <div className="flex items-center text-sm text-gray-600">
                 <IndianRupee className="h-4 w-4 mr-2" />
-                {user.role || 'user'}
+                {user.role || "user"}
               </div>
-                <div className="text-sm text-gray-600">
-                  {(user.platform || user.origin || 'unknown').toString()}
-                </div>
+              <div className="text-sm text-gray-600">
+                {(user.platform || user.origin || "unknown").toString()}
+              </div>
             </div>
 
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full"
               onClick={() => navigate(`/user-details/${user._id}`)}
             >
@@ -142,7 +198,11 @@ const Users = () => {
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={`/placeholder-${user._id}.jpg`} />
                   <AvatarFallback className="bg-blue-100 text-blue-700">
-                    {user.fullName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                    {user.fullName
+                      ?.split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
@@ -157,17 +217,27 @@ const Users = () => {
               </div>
             </TableCell>
             <TableCell>{user.pinCode}</TableCell>
-            <TableCell>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}</TableCell>
             <TableCell>
-              <Badge className={getStatusColor(user.isVerified ? 'active' : 'inactive')}>
-                {user.isVerified ? 'Active' : 'Inactive'}
+              {user.createdAt
+                ? new Date(user.createdAt).toLocaleDateString()
+                : "Unknown"}
+            </TableCell>
+            <TableCell>
+              <Badge
+                className={getStatusColor(
+                  user.isVerified ? "active" : "inactive"
+                )}
+              >
+                {user.isVerified ? "Active" : "Inactive"}
               </Badge>
             </TableCell>
             <TableCell>{user.role}</TableCell>
-          <TableCell className="capitalize">{user.platform || user.origin || 'unknown'}</TableCell>
+            <TableCell className="capitalize">
+              {user.platform || user.origin || "unknown"}
+            </TableCell>
             <TableCell>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => navigate(`/user-details/${user._id}`)}
               >
@@ -189,7 +259,25 @@ const Users = () => {
           <p className="text-gray-600">Manage and monitor all leads</p>
         </div>
         <div className="flex items-center space-x-4">
-          <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'card' | 'table')}>
+          <Button
+            variant="outline"
+            onClick={() =>
+              downloadCsv(
+                `${config.API_BASE_URL}/admin/export/leads`,
+                `loans_${new Date().toISOString().slice(0, 10)}.xlsx`
+              )
+            }
+          >
+            Export Excel
+          </Button>
+
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={(value) =>
+              value && setViewMode(value as "card" | "table")
+            }
+          >
             <ToggleGroupItem value="card" aria-label="Card view">
               <Grid3X3 className="h-4 w-4" />
             </ToggleGroupItem>
@@ -214,7 +302,7 @@ const Users = () => {
                 className="pl-10"
               />
             </div>
-            
+
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by status" />
@@ -232,8 +320,10 @@ const Users = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Locations</SelectItem>
-                {locations.map(location => (
-                  <SelectItem key={location} value={location}>{location}</SelectItem>
+                {locations.map((location) => (
+                  <SelectItem key={location} value={location}>
+                    {location}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -249,14 +339,16 @@ const Users = () => {
       {/* Users List */}
       <Card>
         <CardContent className="p-6">
-          {viewMode === 'card' ? renderCardView() : renderTableView()}
+          {viewMode === "card" ? renderCardView() : renderTableView()}
         </CardContent>
       </Card>
 
       {filteredUsers.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
-            <p className="text-gray-500">No users found matching your criteria.</p>
+            <p className="text-gray-500">
+              No users found matching your criteria.
+            </p>
           </CardContent>
         </Card>
       )}

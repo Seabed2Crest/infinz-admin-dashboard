@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Plus, Users, IndianRupee, Phone, Calendar, Edit, Search, Filter, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { leadsApi, Lead } from '@/lib/api';
-import config from '@/config/env';
+import config from "@/config/env";
 import { downloadCsv } from '@/lib/utils';
 
 const LeadsManagementPage = () => {
@@ -518,7 +518,7 @@ const LeadsManagementPage = () => {
 
       {/* Export */}
       <div className="flex justify-end">
-        <Button variant="outline" onClick={() => downloadCsv(`${config.API_BASE_URL}/admin/export/leads`, `leads_${new Date().toISOString().slice(0,10)}.csv`)}>
+        <Button variant="outline" onClick={() => downloadCsv(`https://backend.infinz.seabed2crest.com/api/v1/admin/export/leads`, `leads_${new Date().toISOString().slice(0,10)}.csv`)}>
           Export Leads CSV
         </Button>
       </div>

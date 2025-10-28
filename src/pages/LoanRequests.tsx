@@ -1,11 +1,17 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Search,
   Filter,
@@ -17,18 +23,30 @@ import {
   XCircle,
   Clock,
   Loader2,
-} from 'lucide-react';
-import { adminApi } from '@/lib/api';
-import config from '@/config/env';
-import { downloadCsv } from '@/lib/utils';
+} from "lucide-react";
+import { adminApi } from "@/lib/api";
+import config from "@/config/env";
+import { downloadCsv } from "@/lib/utils";
 
 const LoanRequests = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [amountRange, setAmountRange] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [amountRange, setAmountRange] = useState("all");
+const downloadFile = async (url: string, filename: string) => {
+  const response = await fetch(url, { method: "GET" });
+  const blob = await response.blob();
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+};
 
-  const { data: loansData, isLoading: loansLoading, error: loansError } = useQuery({
-    queryKey: ['admin-loans'],
+  const {
+    data: loansData,
+    isLoading: loansLoading,
+    error: loansError,
+  } = useQuery({
+    queryKey: ["admin-loans"],
     queryFn: () => adminApi.getLoans(),
     retry: 2,
   });
@@ -36,14 +54,15 @@ const LoanRequests = () => {
   const loanRequests = (loansData?.data as any)?.loanRequests || [];
 
   const filteredRequests = loanRequests.filter((request) => {
-    const matchesSearch = (request.userId?.fullName || 'Unknown')
+    const matchesSearch = (request.userId?.fullName || "Unknown")
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "all" || request.status === statusFilter;
 
     let matchesAmount = true;
-    if (amountRange !== 'all') {
-      const [min, max] = amountRange.split('-').map(Number);
+    if (amountRange !== "all") {
+      const [min, max] = amountRange.split("-").map(Number);
       const amount = parseFloat(request.desiredAmount) || 0;
       matchesAmount = amount >= min && (max ? amount <= max : true);
     }
@@ -53,28 +72,28 @@ const LoanRequests = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      case 'reviewing':
-        return 'bg-blue-100 text-blue-800';
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "reviewing":
+        return "bg-blue-100 text-blue-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'approved':
+      case "approved":
         return <CheckCircle className="h-4 w-4" />;
-      case 'pending':
+      case "pending":
         return <Clock className="h-4 w-4" />;
-      case 'rejected':
+      case "rejected":
         return <XCircle className="h-4 w-4" />;
-      case 'reviewing':
+      case "reviewing":
         return <Eye className="h-4 w-4" />;
       default:
         return null;
@@ -82,11 +101,11 @@ const LoanRequests = () => {
   };
 
   const handleApprove = (requestId: string) => {
-    console.log('Approving request:', requestId);
+    console.log("Approving request:", requestId);
   };
 
   const handleReject = (requestId: string) => {
-    console.log('Rejecting request:', requestId);
+    console.log("Rejecting request:", requestId);
   };
 
   return (
@@ -97,14 +116,15 @@ const LoanRequests = () => {
           <Button
             variant="outline"
             onClick={() =>
-              downloadCsv(
-                `${config.API_BASE_URL}/admin/export/loans`,
-                `loans_${new Date().toISOString().slice(0, 10)}.csv`
+              downloadFile(
+                `https://backend.infinz.seabed2crest.com/api/v1/admin/export/loans-excel`,
+                `loans_${new Date().toISOString().slice(0, 10)}.xlsx`
               )
             }
           >
-            Export CSV
+            Export Excel
           </Button>
+
           <Button>Bulk Actions</Button>
         </div>
       </div>
@@ -120,7 +140,7 @@ const LoanRequests = () => {
                   {loansLoading ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
-                    loanRequests.filter((r) => r.status === 'pending').length
+                    loanRequests.filter((r) => r.status === "pending").length
                   )}
                 </p>
                 <p className="text-sm text-gray-600">Pending</p>
@@ -137,7 +157,7 @@ const LoanRequests = () => {
                   {loansLoading ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
-                    loanRequests.filter((r) => r.status === 'approved').length
+                    loanRequests.filter((r) => r.status === "approved").length
                   )}
                 </p>
                 <p className="text-sm text-gray-600">Approved</p>
@@ -154,7 +174,7 @@ const LoanRequests = () => {
                   {loansLoading ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
-                    loanRequests.filter((r) => r.status === 'rejected').length
+                    loanRequests.filter((r) => r.status === "rejected").length
                   )}
                 </p>
                 <p className="text-sm text-gray-600">Rejected</p>
@@ -173,7 +193,8 @@ const LoanRequests = () => {
                   ) : (
                     `₹${(
                       loanRequests.reduce(
-                        (sum, loan) => sum + (parseFloat(loan.desiredAmount) || 0),
+                        (sum, loan) =>
+                          sum + (parseFloat(loan.desiredAmount) || 0),
                         0
                       ) / 100000
                     ).toFixed(1)}L`
@@ -243,29 +264,41 @@ const LoanRequests = () => {
       ) : loansError ? (
         <Card>
           <CardContent className="p-12 text-center">
-            <p className="text-red-500">Failed to load loan requests. Please try again.</p>
+            <p className="text-red-500">
+              Failed to load loan requests. Please try again.
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
           {filteredRequests.map((request) => (
-            <Card key={request._id} className="hover:shadow-lg transition-shadow">
+            <Card
+              key={request._id}
+              className="hover:shadow-lg transition-shadow"
+            >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-4">
                     <Avatar className="h-12 w-12">
                       <AvatarImage src="/placeholder-avatar.jpg" />
                       <AvatarFallback className="bg-blue-100 text-blue-700">
-                        {(request.userId?.fullName || 'U').charAt(0).toUpperCase()}
+                        {(request.userId?.fullName || "U")
+                          .charAt(0)
+                          .toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <h3 className="font-semibold text-gray-900">
-                        {request.userId?.fullName || 'Unknown User'}
+                        {request.userId?.fullName || "Unknown User"}
                       </h3>
-                      <p className="text-sm text-gray-600">{request.employmentType}</p>
+                      <p className="text-sm text-gray-600">
+                        {request.employmentType}
+                      </p>
                       <p className="text-2xl font-bold text-blue-600">
-                        ₹{parseFloat(request.desiredAmount || '0').toLocaleString()}
+                        ₹
+                        {parseFloat(
+                          request.desiredAmount || "0"
+                        ).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -277,7 +310,7 @@ const LoanRequests = () => {
                     <p className="text-sm text-gray-600 mt-1">
                       {request.createdAt
                         ? new Date(request.createdAt).toLocaleDateString()
-                        : 'Unknown date'}
+                        : "Unknown date"}
                     </p>
                   </div>
                 </div>
@@ -285,7 +318,9 @@ const LoanRequests = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div>
                     <p className="text-sm text-gray-600">Employment Type</p>
-                    <p className="font-medium capitalize">{request.employmentType}</p>
+                    <p className="font-medium capitalize">
+                      {request.employmentType}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Monthly Income</p>
@@ -293,19 +328,25 @@ const LoanRequests = () => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Company</p>
-                    <p className="font-medium">{request.companyOrBusinessName || 'N/A'}</p>
+                    <p className="font-medium">
+                      {request.companyOrBusinessName || "N/A"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Payment Mode</p>
-                    <p className="font-medium">{request.paymentMode || 'N/A'}</p>
+                    <p className="font-medium">
+                      {request.paymentMode || "N/A"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Platform</p>
-                    <p className="font-medium capitalize">{request.platform || 'unknown'}</p>
+                    <p className="font-medium capitalize">
+                      {request.platform || "unknown"}
+                    </p>
                   </div>
                 </div>
 
-                {request.status === 'pending' && (
+                {request.status === "pending" && (
                   <div className="flex gap-2">
                     <Button
                       size="sm"
@@ -335,7 +376,9 @@ const LoanRequests = () => {
       {!loansLoading && !loansError && filteredRequests.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
-            <p className="text-gray-500">No loan requests found matching your criteria.</p>
+            <p className="text-gray-500">
+              No loan requests found matching your criteria.
+            </p>
             <p className="text-sm text-gray-400 mt-2">
               Total requests in database: {loanRequests.length}
             </p>
