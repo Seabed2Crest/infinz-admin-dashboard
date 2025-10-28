@@ -117,7 +117,7 @@ const downloadFile = async (url: string, filename: string) => {
             variant="outline"
             onClick={() =>
               downloadFile(
-                `https://backend.infinz.seabed2crest.com/api/v1/admin/export/loans-excel`,
+                `https://backend.infinz.seabed2crest.com/api/v1/admin/export/loans`,
                 `loans_${new Date().toISOString().slice(0, 10)}.xlsx`
               )
             }
