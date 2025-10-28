@@ -101,9 +101,9 @@ const Users = () => {
                 <IndianRupee className="h-4 w-4 mr-2" />
                 {user.role || 'user'}
               </div>
-              <div className="text-sm text-gray-600">
-                {user.authProvider || 'phone'}
-              </div>
+                <div className="text-sm text-gray-600">
+                  {(user.platform || user.origin || 'unknown').toString()}
+                </div>
             </div>
 
             <Button 
@@ -130,7 +130,7 @@ const Users = () => {
           <TableHead>Join Date</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Role</TableHead>
-          <TableHead>Auth Provider</TableHead>
+          <TableHead>Platform</TableHead>
           <TableHead>Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -164,7 +164,7 @@ const Users = () => {
               </Badge>
             </TableCell>
             <TableCell>{user.role}</TableCell>
-            <TableCell>{user.authProvider}</TableCell>
+          <TableCell className="capitalize">{user.platform || user.origin || 'unknown'}</TableCell>
             <TableCell>
               <Button 
                 variant="ghost" 
@@ -185,8 +185,8 @@ const Users = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Users Management</h2>
-          <p className="text-gray-600">Manage and monitor all registered users</p>
+          <h2 className="text-2xl font-bold text-gray-900">Leads Management</h2>
+          <p className="text-gray-600">Manage and monitor all leads</p>
         </div>
         <div className="flex items-center space-x-4">
           <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'card' | 'table')}>

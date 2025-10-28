@@ -26,6 +26,7 @@ const LeadsManagementPage = () => {
     amount: '',
     tenure: '',
     mobileNumber: '',
+    platformOrigin: 'web',
   });
 
   const queryClient = useQueryClient();
@@ -74,6 +75,7 @@ const LeadsManagementPage = () => {
       amount: '',
       tenure: '',
       mobileNumber: '',
+      platformOrigin: 'web',
     });
   };
 
@@ -109,6 +111,7 @@ const LeadsManagementPage = () => {
       amount: lead.amount,
       tenure: lead.tenure,
       mobileNumber: lead.mobileNumber,
+      platformOrigin: lead.platformOrigin || 'web',
     });
   };
 
@@ -263,6 +266,23 @@ const LeadsManagementPage = () => {
                       <SelectItem value="business">Business Loan</SelectItem>
                       <SelectItem value="education">Education Loan</SelectItem>
                       <SelectItem value="gold">Gold Loan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="platformOrigin">Platform Origin</Label>
+                  <Select
+                    value={formData.platformOrigin}
+                    onValueChange={(value) => handleInputChange('platformOrigin', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select platform" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="web">Web</SelectItem>
+                      <SelectItem value="android">Android</SelectItem>
+                      <SelectItem value="ios">iOS</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -429,6 +449,7 @@ const LeadsManagementPage = () => {
                   <TableHead>Contact</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Loan Details</TableHead>
+                  <TableHead>Platform</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>Actions</TableHead>
@@ -467,6 +488,7 @@ const LeadsManagementPage = () => {
                         <p className="text-sm text-gray-600">{lead.tenure} months</p>
                       </div>
                     </TableCell>
+                    <TableCell className="capitalize">{lead.platformOrigin || 'unknown'}</TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(lead.status)}>
                         {lead.status.toUpperCase()}
@@ -573,6 +595,23 @@ const LeadsManagementPage = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-platformOrigin">Platform Origin</Label>
+                  <Select
+                    value={formData.platformOrigin}
+                    onValueChange={(value) => handleInputChange('platformOrigin', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select platform" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="web">Web</SelectItem>
+                      <SelectItem value="android">Android</SelectItem>
+                      <SelectItem value="ios">iOS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

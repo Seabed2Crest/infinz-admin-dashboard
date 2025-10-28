@@ -10,7 +10,8 @@ import {
   LogOut,
   Building,
   UserCheck,
-  Key
+  Key,
+  ShieldCheck
 } from 'lucide-react';
 import {
   Sidebar,
@@ -29,12 +30,25 @@ import {
 } from '@/components/ui/sidebar';
 
 const menuItems = [
-  { icon: BarChart3, label: 'Dashboard', path: '/dashboard' },
-  { icon: Users, label: 'Users', path: '/users' },
-  { icon: CreditCard, label: 'Loan Requests', path: '/loan-requests' },
-  // { icon: Building, label: 'Business Management', path: '/business-management' },
-  { icon: UserCheck, label: 'Leads', path: '/leads-management' },
-];
+  { icon: BarChart3, label: 'Dashboard', path: '/dashboard', module: 'dashboard', action: 'view' },
+  { icon: Users, label: 'Leads', path: '/leads', module: 'leads', action: 'view' },
+  { icon: CreditCard, label: 'Loan Requests', path: '/loan-requests', module: 'loan-requests', action: 'view' },
+  { icon: ShieldCheck, label: 'Roles & Permissions', path: '/roles-permissions', module: 'employee-management', action: 'view' },
+  // { icon: Building, label: 'Business Management', path: '/business-management', module: 'business-management', action: 'view' },
+  // { icon: UserCheck, label: 'Leads', path: '/leads-management', module: 'leads', action: 'view' },
+] as const;
+
+function hasPermission(module: string, action: string): boolean {
+  try {
+    const raw = localStorage.getItem('adminPermissions');
+    if (!raw) return true; // default allow if not configured yet
+    const perms = JSON.parse(raw) as Record<string, string[]>;
+    const actions = perms[module] || [];
+    return actions.includes(action);
+  } catch {
+    return true;
+  }
+}
 
 const AppSidebar = () => {
   const navigate = useNavigate();
@@ -67,7 +81,7 @@ const AppSidebar = () => {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {menuItems.map((item) => (
+              {menuItems.filter((item) => hasPermission(item.module, item.action)).map((item) => (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton 
                     asChild 

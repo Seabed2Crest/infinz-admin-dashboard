@@ -242,6 +242,10 @@ const LoanRequests = () => {
                     <p className="text-sm text-gray-600">Payment Mode</p>
                     <p className="font-medium">{request.paymentMode || 'N/A'}</p>
                   </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Platform</p>
+                    <p className="font-medium capitalize">{request.platform || 'unknown'}</p>
+                  </div>
                 </div>
 
                 <div className="flex gap-2">

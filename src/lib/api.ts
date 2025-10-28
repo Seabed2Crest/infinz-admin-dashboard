@@ -1,5 +1,6 @@
 // API Configuration
 const API_BASE_URL = 'https://backend.infinz.seabed2crest.com/api/v1';
+// const API_BASE_URL = 'http://localhost:8085/api/v1';
 
 // Types
 export interface EmploymentDetails {
@@ -34,6 +35,7 @@ export interface Lead {
   amount: string;
   tenure: string;
   mobileNumber: string;
+  platformOrigin?: string;
   status: string;
   applicationNumber: string;
   createdAt?: string;
@@ -54,6 +56,8 @@ export interface User {
   role: 'user' | 'admin';
   authProvider: 'phone-number' | 'google' | 'apple';
   authProviderId?: string;
+  platform?: string;
+  origin?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -231,7 +235,7 @@ class ApiClient {
   }
 
   async getAdminUsers(): Promise<ApiResponse<{ users: User[] }>> {
-    return this.request<{ users: User[] }>('/admin/users');
+    return this.request<{ users: User[] }>('/admin/leads');
   }
 
   async getAdminLoans(): Promise<ApiResponse<any[]>> {
@@ -258,6 +262,30 @@ class ApiClient {
     return this.request<{ note: string }>('/admin/reset-password', {
       method: 'POST',
       body: body,
+    });
+  }
+
+  // Employees & Permissions
+  async getAllEmployees(): Promise<any[]> {
+    const res = await this.request<any>('/admin/employees');
+    return Array.isArray(res) ? res : (res?.data ?? []);
+  }
+
+  async createEmployee(payload: { fullName: string; email: string; password: string; phoneNumber?: string }): Promise<ApiResponse<any>> {
+    return this.request<any>('/admin/create-employee', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async getEmployeePermissions(employeeId: string): Promise<ApiResponse<{ permissions: Record<string, string[]> }>> {
+    return this.request<{ permissions: Record<string, string[]> }>(`/admin/employee/${employeeId}/permissions`);
+  }
+
+  async updateEmployeePermissions(payload: { id: string; permissions: Record<string, string[]> }): Promise<ApiResponse<{ permissions: Record<string, string[]> }>> {
+    return this.request<{ permissions: Record<string, string[]> }>(`/admin/update-employee-permissions/${payload.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ permissions: payload.permissions }),
     });
   }
 }
@@ -306,4 +334,9 @@ export const adminApi = {
   getDashboardStats: () => apiClient.getAdminDashboardStats(),
   forgotPassword: (email: string) => apiClient.adminForgotPassword(email),
   resetPassword: (oldPassword: string, newPassword: string) => apiClient.adminResetPassword(oldPassword, newPassword),
+  // Employees & Permissions
+  getEmployees: () => apiClient.getAllEmployees(),
+  createEmployee: (payload: { fullName: string; email: string; password: string; phoneNumber?: string }) => apiClient.createEmployee(payload),
+  getEmployeePermissions: (employeeId: string) => apiClient.getEmployeePermissions(employeeId),
+  updateEmployeePermissions: (payload: { id: string; permissions: Record<string, string[]> }) => apiClient.updateEmployeePermissions(payload),
 };

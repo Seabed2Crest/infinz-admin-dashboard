@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { validateEnv } from "@/config/env";
+import { toast } from "sonner";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -16,6 +17,7 @@ import UserDetails from "./pages/UserDetails";
 import LoanRequests from "./pages/LoanRequests";
 import BusinessManagement from "./pages/BusinessManagement";
 import LeadsManagement from "./pages/LeadsManagement";
+import RolesPermissions from "@/pages/RolesPermissions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +41,25 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
+// Optional: route-level permission guard wrapper
+const RequirePermission = ({ module, action, children }: { module: string; action: string; children: React.ReactNode }) => {
+  const [allowed, setAllowed] = useState<boolean>(true);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('adminPermissions');
+      if (!raw) return; // allow if not set
+      const perms = JSON.parse(raw) as Record<string, string[]>;
+      const actions = perms[module] || [];
+      setAllowed(actions.includes(action));
+      if (!actions.includes(action)) {
+        toast.error('You do not have permission to access this page');
+      }
+    } catch { /* ignore */ }
+  }, [module, action]);
+  if (!allowed) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -58,11 +79,12 @@ const App = () => (
             }
           >
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="users" element={<Users />} />
+            <Route path="leads" element={<Users />} />
             <Route path="user-details/:userId" element={<UserDetails />} />
             <Route path="loan-requests" element={<LoanRequests />} />
             <Route path="business-management" element={<BusinessManagement />} />
             <Route path="leads-management" element={<LeadsManagement />} />
+            <Route path="roles-permissions" element={<RequirePermission module="employee-management" action="view"><RolesPermissions /></RequirePermission>} />
             <Route path="reset-password" element={<ResetPassword />} />
           </Route>
           <Route path="*" element={<NotFound />} />
