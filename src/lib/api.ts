@@ -47,6 +47,17 @@ export interface Lead {
   updatedAt?: string;
 }
 
+export interface DownloadLog {
+  _id: string;
+  employeeId: string;
+  employeeName: string;
+  dataType: "lead" | "loanRequest";
+  downloadedAt: string;
+  count?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface User {
   _id?: string;
   fullName: string;
@@ -152,6 +163,29 @@ class ApiClient {
         method: "PUT",
         body: JSON.stringify(data),
       }
+    );
+  }
+
+  // Download Logs API
+  async getDownloadLogs(params?: {
+    page?: number;
+    limit?: number;
+    employeeName?: string;
+    dataType?: "lead" | "loanRequest";
+    startDate?: string;
+    endDate?: string;
+  }): Promise<
+    ApiResponse<{ data: DownloadLog[]; total: number; pages: number }>
+  > {
+    const query = new URLSearchParams(
+      Object.entries(params || {}).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== "") acc[key] = String(value);
+        return acc;
+      }, {} as Record<string, string>)
+    ).toString();
+
+    return this.request<{ data: DownloadLog[]; total: number; pages: number }>(
+      `/admin/logs${query ? `?${query}` : ""}`
     );
   }
 
@@ -415,6 +449,14 @@ export const userApi = {
 
 // Admin API
 export const adminApi = {
+  getDownloadLogs: (params?: {
+    page?: number;
+    limit?: number;
+    employeeName?: string;
+    dataType?: "lead" | "loanRequest";
+    startDate?: string;
+    endDate?: string;
+  }) => apiClient.getDownloadLogs(params),
   login: (email: string, password: string) =>
     apiClient.adminLogin(email, password),
   getUsers: () => apiClient.getAdminUsers(),

@@ -58,6 +58,13 @@ const menuItems = [
     module: "employee-management", // 👈 matches backend "employee-management"
     action: "view",
   },
+  {
+    icon: ShieldCheck,
+    label: "Logs",
+    path: "/logs",
+    module: "logs", // 👈 matches backend "employee-management"
+    action: "view",
+  },
 ] as const;
 
 // ----------------------

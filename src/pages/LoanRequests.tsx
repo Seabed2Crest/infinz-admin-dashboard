@@ -32,14 +32,14 @@ const LoanRequests = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [amountRange, setAmountRange] = useState("all");
-const downloadFile = async (url: string, filename: string) => {
-  const response = await fetch(url, { method: "GET" });
-  const blob = await response.blob();
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-};
+  const downloadFile = async (url: string, filename: string) => {
+    const response = await fetch(url, { method: "GET" });
+    const blob = await response.blob();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+  };
 
   const {
     data: loansData,
@@ -116,7 +116,7 @@ const downloadFile = async (url: string, filename: string) => {
           <Button
             variant="outline"
             onClick={() =>
-              downloadFile(
+              downloadCsv(
                 `https://backend.infinz.seabed2crest.com/api/v1/admin/export/loans`,
                 `loans_${new Date().toISOString().slice(0, 10)}.xlsx`
               )

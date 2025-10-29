@@ -19,6 +19,7 @@ import LeadsManagement from "./pages/LeadsManagement";
 import RolesPermissions from "@/pages/RolesPermissions";
 import NotFound from "./pages/NotFound";
 import EmployeeForm from "./pages/EmployeeForm";
+import DownloadLogsPage from "./pages/Logs";
 
 const queryClient = new QueryClient();
 
@@ -123,6 +124,7 @@ const App = () => (
           >
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="leads" element={<Users />} />
+            <Route path="logs" element={<DownloadLogsPage />} />
             <Route path="user-details/:userId" element={<UserDetails />} />
             <Route path="loan-requests" element={<LoanRequests />} />
             <Route

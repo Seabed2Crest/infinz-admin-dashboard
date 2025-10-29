@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { downloadCsv } from '@/lib/utils';
+import { downloadCsv } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -76,9 +76,6 @@ const Users = () => {
       </div>
     );
   }
-
-
-
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -263,7 +260,7 @@ const Users = () => {
             variant="outline"
             onClick={() =>
               downloadCsv(
-                `${config.API_BASE_URL}/admin/export/leads`,
+                `https://backend.infinz.seabed2crest.com/api/v1/admin/export/leads`,
                 `loans_${new Date().toISOString().slice(0, 10)}.xlsx`
               )
             }
