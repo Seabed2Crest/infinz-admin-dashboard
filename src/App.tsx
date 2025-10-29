@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,6 +18,7 @@ import BusinessManagement from "./pages/BusinessManagement";
 import LeadsManagement from "./pages/LeadsManagement";
 import RolesPermissions from "@/pages/RolesPermissions";
 import NotFound from "./pages/NotFound";
+import EmployeeForm from "./pages/EmployeeForm";
 
 const queryClient = new QueryClient();
 
@@ -30,31 +30,45 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem("adminToken");
     setIsAuthenticated(!!token);
   }, []);
 
   if (isAuthenticated === null) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
 // Optional: route-level permission guard wrapper
-const RequirePermission = ({ module, action, children }: { module: string; action: string; children: React.ReactNode }) => {
+const RequirePermission = ({
+  module,
+  action,
+  children,
+}: {
+  module: string;
+  action: string;
+  children: React.ReactNode;
+}) => {
   const [allowed, setAllowed] = useState<boolean>(true);
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('adminPermissions');
+      const raw = localStorage.getItem("adminPermissions");
       if (!raw) return; // allow if not set
       const perms = JSON.parse(raw) as Record<string, string[]>;
       const actions = perms[module] || [];
       setAllowed(actions.includes(action));
       if (!actions.includes(action)) {
-        toast.error('You do not have permission to access this page');
+        toast.error("You do not have permission to access this page");
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [module, action]);
   if (!allowed) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
@@ -82,10 +96,28 @@ const App = () => (
             <Route path="leads" element={<Users />} />
             <Route path="user-details/:userId" element={<UserDetails />} />
             <Route path="loan-requests" element={<LoanRequests />} />
-            <Route path="business-management" element={<BusinessManagement />} />
+            <Route
+              path="business-management"
+              element={<BusinessManagement />}
+            />
             <Route path="leads-management" element={<LeadsManagement />} />
-            <Route path="roles-permissions" element={<RequirePermission module="employee-management" action="view"><RolesPermissions /></RequirePermission>} />
+            <Route
+              path="roles-permissions"
+              element={
+                <RequirePermission module="employee-management" action="view">
+                  <RolesPermissions />
+                </RequirePermission>
+              }
+            />
             <Route path="reset-password" element={<ResetPassword />} />
+            <Route
+              path="roles-permissions/create-employee"
+              element={<EmployeeForm />}
+            />
+            <Route
+              path="roles-permissions/update-employee/employeeId"
+              element={<EmployeeForm />}
+            />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
