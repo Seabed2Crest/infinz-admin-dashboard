@@ -273,8 +273,18 @@ class ApiClient {
   async adminLogin(
     email: string,
     password: string
-  ): Promise<ApiResponse<{ token: string }>> {
-    return this.request<{ token: string }>("/admin/login", {
+  ): Promise<
+    ApiResponse<{
+      token: string;
+      accessLevel: string;
+      permissions: Record<string, string[]>;
+    }>
+  > {
+    return this.request<{
+      token: string;
+      accessLevel: string;
+      permissions: Record<string, string[]>;
+    }>("/admin/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });

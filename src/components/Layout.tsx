@@ -1,18 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import infinzLogo from '@/assets/logo_colour.png';
-import { 
-  Users, 
-  CreditCard, 
-  BarChart3, 
+import { useEffect } from "react";
+import { Outlet, useNavigate, useLocation, NavLink } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import infinzLogo from "@/assets/logo_colour.png";
+import {
+  Users,
+  CreditCard,
+  BarChart3,
   LogOut,
-  Building,
-  UserCheck,
   Key,
-  ShieldCheck
-} from 'lucide-react';
+  ShieldCheck,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -27,98 +24,168 @@ import {
   SidebarInset,
   SidebarTrigger,
   useSidebar,
-} from '@/components/ui/sidebar';
+} from "@/components/ui/sidebar";
 
+// ----------------------
+// MENU CONFIGURATION
+// ----------------------
 const menuItems = [
-  { icon: BarChart3, label: 'Dashboard', path: '/dashboard', module: 'dashboard', action: 'view' },
-  { icon: Users, label: 'Leads', path: '/leads', module: 'leads', action: 'view' },
-  { icon: CreditCard, label: 'Loan Requests', path: '/loan-requests', module: 'loan-requests', action: 'view' },
-  { icon: ShieldCheck, label: 'Roles & Permissions', path: '/roles-permissions', module: 'employee-management', action: 'view' },
-  // { icon: Building, label: 'Business Management', path: '/business-management', module: 'business-management', action: 'view' },
-  // { icon: UserCheck, label: 'Leads', path: '/leads-management', module: 'leads', action: 'view' },
+  {
+    icon: BarChart3,
+    label: "Dashboard",
+    path: "/dashboard",
+    module: "dashboard",
+    action: "view",
+  },
+  {
+    icon: Users,
+    label: "Leads",
+    path: "/leads",
+    module: "leads",
+    action: "view",
+  },
+  {
+    icon: CreditCard,
+    label: "Loan Requests",
+    path: "/loan-requests",
+    module: "loan-requests",
+    action: "view",
+  },
+  {
+    icon: ShieldCheck,
+    label: "Roles & Permissions",
+    path: "/roles-permissions",
+    module: "employee-management", // 👈 matches backend "employee-management"
+    action: "view",
+  },
 ] as const;
 
+// ----------------------
+// PERMISSION CHECKER
+// ----------------------
 function hasPermission(module: string, action: string): boolean {
   try {
-    const raw = localStorage.getItem('adminPermissions');
-    if (!raw) return true; // default allow if not configured yet
-    const perms = JSON.parse(raw) as Record<string, string[]>;
-    const actions = perms[module] || [];
-    return actions.includes(action);
-  } catch {
-    return true;
+    const accessLevel = localStorage.getItem("adminAccessLevel");
+
+    // ✅ God-level users see everything
+    if (accessLevel === "god_level") return true;
+
+    const raw = localStorage.getItem("adminPermissions");
+    if (!raw) return false;
+
+    const perms = JSON.parse(raw) as {
+      module: string;
+      actions: string[];
+    }[];
+
+    // ✅ Find module like "employee-management"
+    const found = perms.find((p) => p.module === module);
+    if (!found) return false;
+
+    // ✅ Check if the given action is allowed
+    return found.actions.includes(action);
+  } catch (error) {
+    console.error("Permission check error:", error);
+    return false;
   }
 }
 
+// ----------------------
+// SIDEBAR COMPONENT
+// ----------------------
 const AppSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { state } = useSidebar();
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    navigate('/login');
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminPermissions");
+    localStorage.removeItem("adminAccessLevel");
+    navigate("/login");
   };
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
     <Sidebar className="border-r">
+      {/* HEADER */}
       <SidebarHeader className="border-b p-4 h-16 flex items-center">
         <div className="flex items-center space-x-2">
-          <img 
-            src={infinzLogo} 
-            alt="INFINZ Logo" 
-            className="h-8 w-auto"
-          />
+          <img src={infinzLogo} alt="INFINZ Logo" className="h-8 w-auto" />
         </div>
       </SidebarHeader>
 
+      {/* SIDEBAR MENU */}
       <SidebarContent className="px-2 py-4">
         <SidebarGroup>
           <SidebarGroupLabel className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Navigation
           </SidebarGroupLabel>
+
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {menuItems.filter((item) => hasPermission(item.module, item.action)).map((item) => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive(item.path)}
-                    tooltip={state === 'collapsed' ? item.label : undefined}
-                    className="w-full justify-start"
-                  >
-                    <NavLink to={item.path} className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
-                      <item.icon className="h-4 w-4" />
-                      <span className="text-sm font-medium">{item.label}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {/* ✅ Dynamically show items only if user has permission */}
+              {menuItems
+                .filter((item) => hasPermission(item.module, item.action))
+                .map((item) => (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.path)}
+                      tooltip={state === "collapsed" ? item.label : undefined}
+                      className="w-full justify-start"
+                    >
+                      <NavLink
+                        to={item.path}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
+                            isActive
+                              ? "bg-accent text-accent-foreground"
+                              : "hover:bg-accent hover:text-accent-foreground"
+                          }`
+                        }
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          {item.label}
+                        </span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* FOOTER MENU */}
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
+              {/* Change Password */}
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   asChild
-                  tooltip={state === 'collapsed' ? 'Change Password' : undefined}
+                  tooltip={
+                    state === "collapsed" ? "Change Password" : undefined
+                  }
                   className="w-full justify-start"
                 >
-                  <NavLink to="/reset-password" className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
+                  <NavLink
+                    to="/reset-password"
+                    className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+                  >
                     <Key className="h-4 w-4" />
                     <span className="text-sm font-medium">Change Password</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
+              {/* Logout */}
               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={handleLogout} 
-                  tooltip={state === 'collapsed' ? 'Logout' : undefined}
+                <SidebarMenuButton
+                  onClick={handleLogout}
+                  tooltip={state === "collapsed" ? "Logout" : undefined}
                   className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <LogOut className="h-4 w-4" />
@@ -133,26 +200,24 @@ const AppSidebar = () => {
   );
 };
 
+// ----------------------
+// MAIN LAYOUT WRAPPER
+// ----------------------
 const Layout = () => {
   const location = useLocation();
 
-  // Reset scroll position when route changes
+  // Reset scroll when route changes
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
-
-  const getCurrentPageTitle = () => {
-    const currentItem = menuItems.find(item => item.path === location.pathname);
-    return currentItem?.label || 'Dashboard';
-  };
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        
+
         <SidebarInset className="flex flex-col w-full">
-          {/* Fixed Header - properly positioned to account for sidebar */}
+          {/* HEADER */}
           <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-6 py-4 h-16 flex items-center">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-4">
@@ -167,7 +232,7 @@ const Layout = () => {
             </div>
           </header>
 
-          {/* Page Content with proper spacing */}
+          {/* PAGE CONTENT */}
           <main className="flex-1 px-6 py-6">
             <Outlet />
           </main>

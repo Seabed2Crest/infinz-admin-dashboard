@@ -46,31 +46,60 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 // Optional: route-level permission guard wrapper
+
+interface RequirePermissionProps {
+  module: string;
+  action: string;
+  children: React.ReactNode;
+}
+
 const RequirePermission = ({
   module,
   action,
   children,
-}: {
-  module: string;
-  action: string;
-  children: React.ReactNode;
-}) => {
-  const [allowed, setAllowed] = useState<boolean>(true);
+}: RequirePermissionProps) => {
+  const [allowed, setAllowed] = useState<boolean | null>(null);
+
   useEffect(() => {
     try {
+      const accessLevel = localStorage.getItem("adminAccessLevel");
+      if (accessLevel === "god_level") {
+        setAllowed(true);
+        return;
+      }
+
       const raw = localStorage.getItem("adminPermissions");
-      if (!raw) return; // allow if not set
+      if (!raw) {
+        setAllowed(true); // default allow if no permissions set
+        return;
+      }
+
       const perms = JSON.parse(raw) as Record<string, string[]>;
       const actions = perms[module] || [];
-      setAllowed(actions.includes(action));
-      if (!actions.includes(action)) {
+
+      if (actions.includes(action)) {
+        setAllowed(true);
+      } else {
+        setAllowed(false);
         toast.error("You do not have permission to access this page");
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      setAllowed(true); // fallback allow
     }
   }, [module, action]);
-  if (!allowed) return <Navigate to="/dashboard" replace />;
+
+  if (allowed === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!allowed) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return <>{children}</>;
 };
 
