@@ -177,9 +177,13 @@ const RolesPermissions = () => {
                   <div className="shrink-0">
                     <Button
                       variant="outline"
-                      onClick={() => loadPermissions(emp)}
+                      onClick={() =>
+                        navigate(
+                          `/roles-permissions/update-employee/${emp._id}`
+                        )
+                      }
                     >
-                      Edit Permissions
+                      Edit Employee
                     </Button>
                   </div>
                 </div>

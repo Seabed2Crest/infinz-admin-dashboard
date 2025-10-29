@@ -99,7 +99,6 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
 
-    // Get admin token from localStorage
     const adminToken = localStorage.getItem("adminToken");
 
     const config: RequestInit = {
@@ -109,7 +108,7 @@ class ApiClient {
         ...(adminToken && { Authorization: `Bearer ${adminToken}` }),
         ...options.headers,
       },
-      credentials: "include", // Include cookies for authentication
+      credentials: "include",
       ...options,
     };
 
@@ -338,11 +337,9 @@ class ApiClient {
 
   // Admin Password Reset API
   async adminForgotPassword(email: string): Promise<ApiResponse<null>> {
-    const body = JSON.stringify({ email });
-    console.log("Forgot password request body:", body);
     return this.request<null>("/admin/forgot-password", {
       method: "POST",
-      body: body,
+      body: JSON.stringify({ email }),
     });
   }
 
@@ -350,11 +347,9 @@ class ApiClient {
     oldPassword: string,
     newPassword: string
   ): Promise<ApiResponse<{ note: string }>> {
-    const body = JSON.stringify({ oldPassword, newPassword });
-    console.log("Reset password request body:", body);
     return this.request<{ note: string }>("/admin/reset-password", {
       method: "POST",
-      body: body,
+      body: JSON.stringify({ oldPassword, newPassword }),
     });
   }
 
@@ -364,14 +359,36 @@ class ApiClient {
     return Array.isArray(res) ? res : res?.data ?? [];
   }
 
+  // ✅ Fetch single employee details by ID
+  async getEmployeeById(employeeId: string): Promise<any> {
+    return this.request<any>(`/admin/employees/${employeeId}`);
+  }
+
   async createEmployee(payload: {
     fullName: string;
     email: string;
     password: string;
     phoneNumber?: string;
+    permissions?: Record<string, string[]>;
   }): Promise<ApiResponse<any>> {
     return this.request<any>("/admin/create-employee", {
       method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // ✅ Update employee details
+  async updateEmployee(
+    employeeId: string,
+    payload: {
+      fullName: string;
+      email: string;
+      phoneNumber: string;
+      permissions: Record<string, string[]>;
+    }
+  ): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/employees/${employeeId}`, {
+      method: "PUT",
       body: JSON.stringify(payload),
     });
   }
@@ -401,12 +418,11 @@ class ApiClient {
 // Create and export API client instance
 export const apiClient = new ApiClient(API_BASE_URL);
 
-// Export individual API functions for convenience
+// Export individual API functions
 export const employmentApi = {
   get: () => apiClient.getEmploymentDetails(),
   update: (data: Partial<EmploymentDetails>) =>
     apiClient.updateEmploymentDetails(data),
-  // Admin functions
   getForUser: (userId: string) => apiClient.getEmploymentDetailsForUser(userId),
   updateForUser: (userId: string, data: Partial<EmploymentDetails>) =>
     apiClient.updateEmploymentDetailsForUser(userId, data),
@@ -457,6 +473,7 @@ export const adminApi = {
     startDate?: string;
     endDate?: string;
   }) => apiClient.getDownloadLogs(params),
+
   login: (email: string, password: string) =>
     apiClient.adminLogin(email, password),
   getUsers: () => apiClient.getAdminUsers(),
@@ -465,8 +482,11 @@ export const adminApi = {
   forgotPassword: (email: string) => apiClient.adminForgotPassword(email),
   resetPassword: (oldPassword: string, newPassword: string) =>
     apiClient.adminResetPassword(oldPassword, newPassword),
+
   // Employees & Permissions
   getEmployees: () => apiClient.getAllEmployees(),
+  getEmployeeById: (employeeId: string) =>
+    apiClient.getEmployeeById(employeeId), // ✅ added
   createEmployee: (payload: {
     fullName: string;
     email: string;
@@ -474,6 +494,15 @@ export const adminApi = {
     phoneNumber?: string;
     permissions?: Record<string, string[]>;
   }) => apiClient.createEmployee(payload),
+  updateEmployee: (
+    employeeId: string,
+    payload: {
+      fullName: string;
+      email: string;
+      phoneNumber: string;
+      permissions: Record<string, string[]>;
+    }
+  ) => apiClient.updateEmployee(employeeId, payload), // ✅ added
   getEmployeePermissions: (employeeId: string) =>
     apiClient.getEmployeePermissions(employeeId),
   updateEmployeePermissions: (payload: {

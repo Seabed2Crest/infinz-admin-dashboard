@@ -146,7 +146,7 @@ const App = () => (
               element={<EmployeeForm />}
             />
             <Route
-              path="roles-permissions/update-employee/employeeId"
+              path="roles-permissions/update-employee/:employeeId"
               element={<EmployeeForm />}
             />
           </Route>

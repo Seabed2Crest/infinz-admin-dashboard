@@ -1,7 +1,8 @@
+"use client";
 import { adminApi } from "@/lib/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -13,13 +14,14 @@ function EmployeeForm() {
   const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(1);
+  const [isEditing, setIsEditing] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     password: "",
     phoneNumber: "",
-    permissions: {},
+    permissions: {} as Record<string, string[]>,
   });
 
   const MODULE_ACTIONS = {
@@ -30,31 +32,78 @@ function EmployeeForm() {
     logs: ["view"],
   } as const;
 
+  // ✅ Fetch Employee details if editing
+  useEffect(() => {
+    const fetchEmployee = async () => {
+      try {
+        const res = await adminApi.getEmployees();
+        const employees = res ?? [];
+        const employee = employees.find((e: any) => e._id === employeeId);
+
+        if (employee) {
+          const permissionMap: Record<string, string[]> = {};
+          employee.permissions.forEach((p: any) => {
+            permissionMap[p.module] = p.actions;
+          });
+
+          setFormData({
+            fullName: employee.fullName,
+            email: employee.email,
+            password: "",
+            phoneNumber: employee.phoneNumber,
+            permissions: permissionMap,
+          });
+          setIsEditing(true);
+        }
+      } catch (err) {
+        toast.error("Failed to load employee details");
+      }
+    };
+
+    if (employeeId) fetchEmployee();
+  }, [employeeId]);
+
+  // ✅ Create Employee
   const createMutation = useMutation({
     mutationFn: async () => {
-      return adminApi.createEmployee({
+      const response = await adminApi.createEmployee({
         fullName: formData.fullName,
         email: formData.email,
         password: formData.password,
         phoneNumber: formData.phoneNumber,
         permissions: formData.permissions,
       });
+      return response;
     },
     onSuccess: () => {
-      toast.success("Employee created");
-      setFormData({
-        fullName: "",
-        email: "",
-        password: "",
-        phoneNumber: "",
-        permissions: {},
-      });
-      setCurrentStep(1);
+      toast.success("Employee created successfully");
       queryClient.invalidateQueries({ queryKey: ["employees"] });
+      navigate("/employees");
     },
     onError: (e: any) => toast.error(e?.message || "Failed to create employee"),
   });
 
+  // ✅ Update Employee (full update)
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        fullName: formData.fullName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        permissions: formData.permissions,
+        ...(formData.password ? { password: formData.password } : {}),
+      };
+      return adminApi.updateEmployee(employeeId!, payload);
+    },
+    onSuccess: () => {
+      toast.success("Employee updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      navigate("/roles-permissions");
+    },
+    onError: (e: any) => toast.error(e?.message || "Failed to update employee"),
+  });
+
+  // ✅ Toggle Permissions
   function togglePermission(module: string, action: string) {
     setFormData((prev) => {
       const modulePerms = prev.permissions[module] || [];
@@ -74,12 +123,12 @@ function EmployeeForm() {
     });
   }
 
+  // ✅ Step navigation
   function handleNext() {
-    // Basic validation
     if (
       !formData.fullName ||
       !formData.email ||
-      !formData.password ||
+      (!isEditing && !formData.password) ||
       !formData.phoneNumber
     ) {
       toast.error("Please fill in all fields");
@@ -90,6 +139,15 @@ function EmployeeForm() {
 
   function handleBack() {
     setCurrentStep(1);
+  }
+
+  // ✅ Submit handler
+  function handleSubmit() {
+    if (isEditing) {
+      updateMutation.mutate();
+    } else {
+      createMutation.mutate();
+    }
   }
 
   return (
@@ -132,7 +190,9 @@ function EmployeeForm() {
       {/* Step 1: Basic Details */}
       {currentStep === 1 && (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold mb-6">Employee Details</h2>
+          <h2 className="text-2xl font-bold mb-6">
+            {isEditing ? "Edit Employee Details" : "Employee Details"}
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">
@@ -157,17 +217,21 @@ function EmployeeForm() {
                 }
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
-              <Input
-                placeholder="Enter password"
-                type="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-              />
-            </div>
+            {!isEditing && (
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Password
+                </label>
+                <Input
+                  placeholder="Enter password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium mb-2">
                 Phone Number
@@ -232,11 +296,17 @@ function EmployeeForm() {
               Back
             </Button>
             <Button
-              onClick={() => createMutation.mutate()}
-              disabled={createMutation.isPending}
+              onClick={handleSubmit}
+              disabled={createMutation.isPending || updateMutation.isPending}
               className="px-8"
             >
-              {createMutation.isPending ? "Creating..." : "Create Employee"}
+              {isEditing
+                ? updateMutation.isPending
+                  ? "Updating..."
+                  : "Update Employee"
+                : createMutation.isPending
+                ? "Creating..."
+                : "Create Employee"}
             </Button>
           </div>
         </div>
