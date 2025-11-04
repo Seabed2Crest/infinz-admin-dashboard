@@ -1,681 +1,407 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Plus, Users, IndianRupee, Phone, Calendar, Edit, Search, Filter, MapPin } from 'lucide-react';
-import { toast } from 'sonner';
-import { leadsApi, Lead } from '@/lib/api';
-import config from "@/config/env";
-import { downloadCsv } from '@/lib/utils';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Download, Loader2, X } from "lucide-react";
 
-const LeadsManagementPage = () => {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [formData, setFormData] = useState({
-    name: '',
-    city: '',
-    pincode: '',
-    loanType: '',
-    amount: '',
-    tenure: '',
-    mobileNumber: '',
-    platformOrigin: 'web',
+const Leads = () => {
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [applyFilters, setApplyFilters] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const [exportFilters, setExportFilters] = useState({
+    status: [] as string[],
+    city: [] as string[],
+    loanType: [] as string[],
+    platformOrigin: [] as string[],
+    fromDate: "",
+    toDate: "",
   });
 
-  const queryClient = useQueryClient();
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      setIsExporting(true);
+      const token = localStorage.getItem("adminToken");
 
-  // Fetch all leads
-  const { data: leadsData, isLoading, error } = useQuery({
-    queryKey: ['leads'],
-    queryFn: leadsApi.getAll,
-    retry: 2,
-  });
-
-  // Create lead mutation
-  const createMutation = useMutation({
-    mutationFn: leadsApi.create,
-    onSuccess: () => {
-      toast.success('Lead created successfully');
-      setIsCreateDialogOpen(false);
-      resetForm();
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create lead');
-    },
-  });
-
-  // Update lead mutation
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Lead> }) => leadsApi.update(id, data),
-    onSuccess: () => {
-      toast.success('Lead updated successfully');
-      setEditingLead(null);
-      resetForm();
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to update lead');
-    },
-  });
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      city: '',
-      pincode: '',
-      loanType: '',
-      amount: '',
-      tenure: '',
-      mobileNumber: '',
-      platformOrigin: 'web',
-    });
-  };
-
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleCreateSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    createMutation.mutate(formData);
-  };
-
-  const handleEditSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingLead) {
-      updateMutation.mutate({
-        id: editingLead._id!,
-        data: formData,
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(link.href);
+
+      setExportModalOpen(false);
+      setApplyFilters(false);
+      setExportFilters({
+        status: [],
+        city: [],
+        loanType: [],
+        platformOrigin: [],
+        fromDate: "",
+        toDate: "",
+      });
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert("Failed to download file. Please try again.");
+    } finally {
+      setIsExporting(false);
     }
   };
 
-  const handleEdit = (lead: Lead) => {
-    setEditingLead(lead);
-    setFormData({
-      name: lead.name,
-      city: lead.city,
-      pincode: lead.pincode,
-      loanType: lead.loanType,
-      amount: lead.amount,
-      tenure: lead.tenure,
-      mobileNumber: lead.mobileNumber,
-      platformOrigin: lead.platformOrigin || 'web',
-    });
-  };
+  const handleExport = () => {
+    let url = `http://localhost:8085/api/v1/admin/export/leads`;
 
-  const handleCancel = () => {
-    setEditingLead(null);
-    setIsCreateDialogOpen(false);
-    resetForm();
-  };
+    if (applyFilters) {
+      const params = new URLSearchParams();
 
-  const formatCurrency = (amount: string) => {
-    return `₹${parseInt(amount).toLocaleString()}`;
-  };
+      // Add multiple status values
+      if (exportFilters.status.length > 0) {
+        exportFilters.status.forEach((status) => {
+          params.append("status", status);
+        });
+      }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
+      // Add multiple city values
+      if (exportFilters.city.length > 0) {
+        exportFilters.city.forEach((city) => {
+          params.append("city", city);
+        });
+      }
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      case 'reviewing':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      // Add multiple loan type values
+      if (exportFilters.loanType.length > 0) {
+        exportFilters.loanType.forEach((type) => {
+          params.append("loanType", type);
+        });
+      }
+
+      // Add multiple platform origin values
+      if (exportFilters.platformOrigin.length > 0) {
+        exportFilters.platformOrigin.forEach((platform) => {
+          params.append("platformOrigin", platform);
+        });
+      }
+
+      if (exportFilters.fromDate)
+        params.append("fromDate", exportFilters.fromDate);
+      if (exportFilters.toDate) params.append("toDate", exportFilters.toDate);
+
+      const queryString = params.toString();
+      if (queryString) url += `?${queryString}`;
     }
+
+    const filename = `leads_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    downloadFile(url, filename);
   };
-
-  // Filter leads based on search and status
-  const filteredLeads = (leadsData?.data || []).filter(lead => {
-    const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lead.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lead.mobileNumber.includes(searchTerm) ||
-                         lead.applicationNumber.includes(searchTerm);
-    const matchesStatus = statusFilter === 'all' || lead.status.toLowerCase() === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading leads...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">Failed to load leads</p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
-        </div>
-      </div>
-    );
-  }
-
-  const leads = leadsData?.data || [];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Leads Management</h1>
-          <p className="text-gray-600">Manage loan application leads and track their progress</p>
-        </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Lead
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Add New Lead</DialogTitle>
-              <DialogDescription>
-                Enter the lead details for loan application.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreateSubmit}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                      placeholder="Enter full name"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="mobileNumber">Mobile Number</Label>
-                    <Input
-                      id="mobileNumber"
-                      type="tel"
-                      value={formData.mobileNumber}
-                      onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
-                      placeholder="Enter 10-digit mobile number"
-                      maxLength={10}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      value={formData.city}
-                      onChange={(e) => handleInputChange('city', e.target.value)}
-                      placeholder="Enter city"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="pincode">Pincode</Label>
-                    <Input
-                      id="pincode"
-                      value={formData.pincode}
-                      onChange={(e) => handleInputChange('pincode', e.target.value)}
-                      placeholder="Enter pincode"
-                      maxLength={6}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="loanType">Loan Type</Label>
-                  <Select
-                    value={formData.loanType}
-                    onValueChange={(value) => handleInputChange('loanType', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select loan type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="personal">Personal Loan</SelectItem>
-                      <SelectItem value="home">Home Loan</SelectItem>
-                      <SelectItem value="car">Car Loan</SelectItem>
-                      <SelectItem value="business">Business Loan</SelectItem>
-                      <SelectItem value="education">Education Loan</SelectItem>
-                      <SelectItem value="gold">Gold Loan</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="platformOrigin">Platform Origin</Label>
-                  <Select
-                    value={formData.platformOrigin}
-                    onValueChange={(value) => handleInputChange('platformOrigin', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select platform" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="web">Web</SelectItem>
-                      <SelectItem value="android">Android</SelectItem>
-                      <SelectItem value="ios">iOS</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">Loan Amount (₹)</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      value={formData.amount}
-                      onChange={(e) => handleInputChange('amount', e.target.value)}
-                      placeholder="Enter loan amount"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="tenure">Tenure (months)</Label>
-                    <Input
-                      id="tenure"
-                      type="number"
-                      value={formData.tenure}
-                      onChange={(e) => handleInputChange('tenure', e.target.value)}
-                      placeholder="Enter tenure in months"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={createMutation.isPending}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                >
-                  {createMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    'Create Lead'
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+      {/* Export Modal */}
+      {exportModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Leads</p>
-                <p className="text-3xl font-bold">{leads.length}</p>
-              </div>
-              <Users className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-3xl font-bold">
-                  {leads.filter(l => l.status.toLowerCase() === 'pending').length}
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Export Leads to Excel
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Choose whether to export all data or apply filters
                 </p>
               </div>
-              <Calendar className="h-8 w-8 text-yellow-600" />
+              <button
+                onClick={() => setExportModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+                disabled={isExporting}
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Approved</p>
-                <p className="text-3xl font-bold">
-                  {leads.filter(l => l.status.toLowerCase() === 'approved').length}
-                </p>
-              </div>
-              <IndianRupee className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Amount</p>
-                <p className="text-3xl font-bold">
-                  {formatCurrency(leads.reduce((sum, l) => sum + parseInt(l.amount), 0).toString())}
-                </p>
-              </div>
-              
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters and Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Leads Overview</CardTitle>
-          <CardDescription>
-            Search and filter leads by various criteria
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search by name, city, mobile, or application number..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="apply-filters"
+                  checked={applyFilters}
+                  onChange={(e) => setApplyFilters(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                 />
-              </div>
-            </div>
-            <div className="w-full sm:w-48">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                  <SelectItem value="reviewing">Reviewing</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {filteredLeads.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No leads found matching your criteria</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Application #</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Loan Details</TableHead>
-                  <TableHead>Platform</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLeads.map((lead) => (
-                  <TableRow key={lead._id}>
-                    <TableCell className="font-mono text-sm">
-                      {lead.applicationNumber}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{lead.name}</p>
-                        <p className="text-sm text-gray-600">{lead.loanType}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4" />
-                        {lead.mobileNumber}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        <div>
-                          <p className="text-sm">{lead.city}</p>
-                          <p className="text-xs text-gray-600">{lead.pincode}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-semibold">{formatCurrency(lead.amount)}</p>
-                        <p className="text-sm text-gray-600">{lead.tenure} months</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="capitalize">{lead.platformOrigin || 'unknown'}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(lead.status)}>
-                        {lead.status.toUpperCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatDate(lead.createdAt!)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(lead)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Export */}
-      <div className="flex justify-end">
-        <Button variant="outline" onClick={() => downloadCsv(`https://backend.infinz.seabed2crest.com/api/v1/admin/export/leads`, `leads_${new Date().toISOString().slice(0,10)}.csv`)}>
-          Export Leads CSV
-        </Button>
-      </div>
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editingLead} onOpenChange={() => setEditingLead(null)}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Lead</DialogTitle>
-            <DialogDescription>
-              Update the lead details.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleEditSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">Full Name</Label>
-                  <Input
-                    id="edit-name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="Enter full name"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-mobileNumber">Mobile Number</Label>
-                  <Input
-                    id="edit-mobileNumber"
-                    type="tel"
-                    value={formData.mobileNumber}
-                    onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
-                    placeholder="Enter 10-digit mobile number"
-                    maxLength={10}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-city">City</Label>
-                  <Input
-                    id="edit-city"
-                    value={formData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    placeholder="Enter city"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-pincode">Pincode</Label>
-                  <Input
-                    id="edit-pincode"
-                    value={formData.pincode}
-                    onChange={(e) => handleInputChange('pincode', e.target.value)}
-                    placeholder="Enter pincode"
-                    maxLength={6}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-loanType">Loan Type</Label>
-                <Select
-                  value={formData.loanType}
-                  onValueChange={(value) => handleInputChange('loanType', value)}
+                <label
+                  htmlFor="apply-filters"
+                  className="text-sm font-medium text-gray-700 cursor-pointer"
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select loan type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="personal">Personal Loan</SelectItem>
-                    <SelectItem value="home">Home Loan</SelectItem>
-                    <SelectItem value="car">Car Loan</SelectItem>
-                    <SelectItem value="business">Business Loan</SelectItem>
-                    <SelectItem value="education">Education Loan</SelectItem>
-                    <SelectItem value="gold">Gold Loan</SelectItem>
-                  </SelectContent>
-                </Select>
+                  Apply filters to export
+                </label>
               </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="edit-platformOrigin">Platform Origin</Label>
-                  <Select
-                    value={formData.platformOrigin}
-                    onValueChange={(value) => handleInputChange('platformOrigin', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select platform" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="web">Web</SelectItem>
-                      <SelectItem value="android">Android</SelectItem>
-                      <SelectItem value="ios">iOS</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {applyFilters && (
+                <div className="space-y-4 pl-6 border-l-2 border-gray-200">
+                  {/* Status Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Status
+                    </label>
+                    <div className="space-y-2">
+                      {["new", "contacted", "approved", "rejected"].map(
+                        (status) => (
+                          <div
+                            key={status}
+                            className="flex items-center space-x-2"
+                          >
+                            <input
+                              type="checkbox"
+                              id={`status-${status}`}
+                              checked={exportFilters.status.includes(status)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setExportFilters({
+                                    ...exportFilters,
+                                    status: [...exportFilters.status, status],
+                                  });
+                                } else {
+                                  setExportFilters({
+                                    ...exportFilters,
+                                    status: exportFilters.status.filter(
+                                      (s) => s !== status
+                                    ),
+                                  });
+                                }
+                              }}
+                              className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            />
+                            <label
+                              htmlFor={`status-${status}`}
+                              className="text-sm text-gray-700 cursor-pointer capitalize"
+                            >
+                              {status}
+                            </label>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-amount">Loan Amount (₹)</Label>
-                  <Input
-                    id="edit-amount"
-                    type="number"
-                    value={formData.amount}
-                    onChange={(e) => handleInputChange('amount', e.target.value)}
-                    placeholder="Enter loan amount"
-                    required
-                  />
-                </div>
+                  {/* Loan Type Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Loan Type
+                    </label>
+                    <div className="space-y-2">
+                      {["personal", "home", "business", "auto"].map((type) => (
+                        <div key={type} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`loanType-${type}`}
+                            checked={exportFilters.loanType.includes(type)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setExportFilters({
+                                  ...exportFilters,
+                                  loanType: [...exportFilters.loanType, type],
+                                });
+                              } else {
+                                setExportFilters({
+                                  ...exportFilters,
+                                  loanType: exportFilters.loanType.filter(
+                                    (t) => t !== type
+                                  ),
+                                });
+                              }
+                            }}
+                            className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                          />
+                          <label
+                            htmlFor={`loanType-${type}`}
+                            className="text-sm text-gray-700 cursor-pointer capitalize"
+                          >
+                            {type}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="edit-tenure">Tenure (months)</Label>
-                  <Input
-                    id="edit-tenure"
-                    type="number"
-                    value={formData.tenure}
-                    onChange={(e) => handleInputChange('tenure', e.target.value)}
-                    placeholder="Enter tenure in months"
-                    required
-                  />
+                  {/* Platform Origin Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Platform Origin
+                    </label>
+                    <div className="space-y-2">
+                      {["web", "android", "ios"].map((platform) => (
+                        <div
+                          key={platform}
+                          className="flex items-center space-x-2"
+                        >
+                          <input
+                            type="checkbox"
+                            id={`platform-${platform}`}
+                            checked={exportFilters.platformOrigin.includes(
+                              platform
+                            )}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setExportFilters({
+                                  ...exportFilters,
+                                  platformOrigin: [
+                                    ...exportFilters.platformOrigin,
+                                    platform,
+                                  ],
+                                });
+                              } else {
+                                setExportFilters({
+                                  ...exportFilters,
+                                  platformOrigin:
+                                    exportFilters.platformOrigin.filter(
+                                      (p) => p !== platform
+                                    ),
+                                });
+                              }
+                            }}
+                            className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                          />
+                          <label
+                            htmlFor={`platform-${platform}`}
+                            className="text-sm text-gray-700 cursor-pointer capitalize"
+                          >
+                            {platform}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* City Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      City (Optional)
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Enter city name"
+                      value={exportFilters.city[0] || ""}
+                      onChange={(e) =>
+                        setExportFilters({
+                          ...exportFilters,
+                          city: e.target.value ? [e.target.value] : [],
+                        })
+                      }
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Leave empty to include all cities
+                    </p>
+                  </div>
+
+                  {/* Date Range */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        From Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={exportFilters.fromDate}
+                        onChange={(e) =>
+                          setExportFilters({
+                            ...exportFilters,
+                            fromDate: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        To Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={exportFilters.toDate}
+                        onChange={(e) =>
+                          setExportFilters({
+                            ...exportFilters,
+                            toDate: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-            <DialogFooter>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50 sticky bottom-0">
               <Button
-                type="button"
                 variant="outline"
-                onClick={handleCancel}
-                disabled={updateMutation.isPending}
+                onClick={() => setExportModalOpen(false)}
+                disabled={isExporting}
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={updateMutation.isPending}
-              >
-                {updateMutation.isPending ? (
+              <Button onClick={handleExport} disabled={isExporting}>
+                {isExporting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Updating...
+                    Exporting...
                   </>
                 ) : (
-                  'Update Lead'
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export Excel
+                  </>
                 )}
               </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Page Content */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">
+              Leads Management
+            </h1>
+            <Button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("Button clicked - opening modal");
+                setExportModalOpen(true);
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Excel
+            </Button>
+          </div>
+
+          {/* Add your leads table/list here */}
+          <div className="text-center text-gray-500 py-12">
+            <p>Your leads content goes here</p>
+            <p className="text-sm mt-2">
+              Modal state: {exportModalOpen ? "Open" : "Closed"}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
-export default LeadsManagementPage;
+export default Leads;

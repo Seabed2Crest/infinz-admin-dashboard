@@ -23,6 +23,8 @@ import {
   XCircle,
   Clock,
   Loader2,
+  Download,
+  X,
 } from "lucide-react";
 import { adminApi } from "@/lib/api";
 import config from "@/config/env";
@@ -32,13 +34,89 @@ const LoanRequests = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [amountRange, setAmountRange] = useState("all");
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [applyFilters, setApplyFilters] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Export filter states
+  const [exportFilters, setExportFilters] = useState({
+    status: [] as string[],
+    employmentType: [] as string[],
+    fromDate: "",
+    toDate: "",
+  });
+
   const downloadFile = async (url: string, filename: string) => {
-    const response = await fetch(url, { method: "GET" });
-    const blob = await response.blob();
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
+    try {
+      setIsExporting(true);
+
+      // Get the token from localStorage or wherever you store it
+      const token = localStorage.getItem("adminToken"); // Adjust this based on where you store your token
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      setExportModalOpen(false);
+      setApplyFilters(false);
+      setExportFilters({
+        status: [],
+        employmentType: [],
+        fromDate: "",
+        toDate: "",
+      });
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert("Failed to download file. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExport = () => {
+    let url = `https://backend.infinz.seabed2crest.com/api/v1/admin/export/loans`;
+
+    if (applyFilters) {
+      const params = new URLSearchParams();
+
+      // Add multiple status values
+      if (exportFilters.status.length > 0) {
+        exportFilters.status.forEach((status) => {
+          params.append("status", status);
+        });
+      }
+
+      // Add multiple employment type values
+      if (exportFilters.employmentType.length > 0) {
+        exportFilters.employmentType.forEach((type) => {
+          params.append("employmentType", type);
+        });
+      }
+
+      if (exportFilters.fromDate)
+        params.append("fromDate", exportFilters.fromDate);
+      if (exportFilters.toDate) params.append("toDate", exportFilters.toDate);
+
+      const queryString = params.toString();
+      if (queryString) url += `?${queryString}`;
+    }
+
+    const filename = `loans_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    downloadFile(url, filename);
   };
 
   const {
@@ -110,18 +188,206 @@ const LoanRequests = () => {
 
   return (
     <div className="space-y-6">
+      {/* Export Modal */}
+      {exportModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Export Loans to Excel
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Choose whether to export all data or apply filters
+                </p>
+              </div>
+              <button
+                onClick={() => setExportModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+                disabled={isExporting}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="apply-filters"
+                  checked={applyFilters}
+                  onChange={(e) => setApplyFilters(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                <label
+                  htmlFor="apply-filters"
+                  className="text-sm font-medium text-gray-700 cursor-pointer"
+                >
+                  Apply filters to export
+                </label>
+              </div>
+
+              {applyFilters && (
+                <div className="space-y-4 pl-6 border-l-2 border-gray-200">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Status
+                    </label>
+                    <div className="space-y-2">
+                      {["pending", "approved", "rejected", "reviewing"].map(
+                        (status) => (
+                          <div
+                            key={status}
+                            className="flex items-center space-x-2"
+                          >
+                            <input
+                              type="checkbox"
+                              id={`status-${status}`}
+                              checked={exportFilters.status.includes(status)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setExportFilters({
+                                    ...exportFilters,
+                                    status: [...exportFilters.status, status],
+                                  });
+                                } else {
+                                  setExportFilters({
+                                    ...exportFilters,
+                                    status: exportFilters.status.filter(
+                                      (s) => s !== status
+                                    ),
+                                  });
+                                }
+                              }}
+                              className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            />
+                            <label
+                              htmlFor={`status-${status}`}
+                              className="text-sm text-gray-700 cursor-pointer capitalize"
+                            >
+                              {status}
+                            </label>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Employment Type
+                    </label>
+                    <div className="space-y-2">
+                      {["salaried", "self-employed", "business"].map((type) => (
+                        <div key={type} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`employment-${type}`}
+                            checked={exportFilters.employmentType.includes(
+                              type
+                            )}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setExportFilters({
+                                  ...exportFilters,
+                                  employmentType: [
+                                    ...exportFilters.employmentType,
+                                    type,
+                                  ],
+                                });
+                              } else {
+                                setExportFilters({
+                                  ...exportFilters,
+                                  employmentType:
+                                    exportFilters.employmentType.filter(
+                                      (t) => t !== type
+                                    ),
+                                });
+                              }
+                            }}
+                            className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                          />
+                          <label
+                            htmlFor={`employment-${type}`}
+                            className="text-sm text-gray-700 cursor-pointer capitalize"
+                          >
+                            {type === "self-employed" ? "Self Employed" : type}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        From Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={exportFilters.fromDate}
+                        onChange={(e) =>
+                          setExportFilters({
+                            ...exportFilters,
+                            fromDate: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        To Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={exportFilters.toDate}
+                        onChange={(e) =>
+                          setExportFilters({
+                            ...exportFilters,
+                            toDate: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50 sticky bottom-0">
+              <Button
+                variant="outline"
+                onClick={() => setExportModalOpen(false)}
+                disabled={isExporting}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleExport} disabled={isExporting}>
+                {isExporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export Excel
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-end">
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() =>
-              downloadCsv(
-                `https://backend.infinz.seabed2crest.com/api/v1/admin/export/loans`,
-                `loans_${new Date().toISOString().slice(0, 10)}.xlsx`
-              )
-            }
-          >
+          <Button variant="outline" onClick={() => setExportModalOpen(true)}>
+            <Download className="h-4 w-4 mr-2" />
             Export Excel
           </Button>
 
