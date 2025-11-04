@@ -44,13 +44,13 @@ const menuItems = [
     module: "leads",
     action: "view",
   },
-  {
-    icon: CreditCard,
-    label: "Loan Requests",
-    path: "/loan-requests",
-    module: "loan-requests",
-    action: "view",
-  },
+  // {
+  //   icon: CreditCard,
+  //   label: "Loan Requests",
+  //   path: "/loan-requests",
+  //   module: "loan-requests",
+  //   action: "view",
+  // },
   {
     icon: ShieldCheck,
     label: "Roles & Permissions",
