@@ -61,7 +61,7 @@ const Leads = () => {
   };
 
   const handleExport = () => {
-    let url = `http://localhost:8085/api/v1/admin/export/leads`;
+    let url = `https://backend.infinz.seabed2crest.com/api/v1/admin/export/leads`;
 
     if (applyFilters) {
       const params = new URLSearchParams();

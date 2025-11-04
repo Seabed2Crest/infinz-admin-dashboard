@@ -58,26 +58,136 @@ export interface DownloadLog {
   updatedAt?: string;
 }
 
+// export interface User {
+//   _id?: string;
+//   fullName: string;
+//   email: string;
+//   phoneNumber: string;
+//   gender: string;
+//   dateOfBirth: string;
+//   pancardNumber: string;
+//   isVerified: boolean;
+//   pinCode: string;
+//   maritalStatus: string;
+//   role: "user" | "admin";
+//   authProvider: "phone-number" | "google" | "apple";
+//   authProviderId?: string;
+//   platform?: string;
+//   origin?: string;
+//   createdAt?: string;
+//   updatedAt?: string;
+// }
+
 export interface User {
   _id?: string;
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  gender: string;
-  dateOfBirth: string;
-  pancardNumber: string;
-  isVerified: boolean;
-  pinCode: string;
-  maritalStatus: string;
-  role: "user" | "admin";
-  authProvider: "phone-number" | "google" | "apple";
-  authProviderId?: string;
+
+  // Common fields
+  mobileNumber?: string;
   platform?: string;
-  origin?: string;
+  source?: string;
+  status?: string;
   createdAt?: string;
   updatedAt?: string;
+  __v?: number;
+
+  // Business Loan Website fields
+  businessType?: string;
+  turnover?: string;
+  loanAmount?: string;
+  emiTenure?: string;
+
+  // Personal Loan Website fields
+  loanPurpose?: string;
+  monthlyIncome?: string;
+  loanAmountRequired?: string;
+
+  // App fields
+  userId?: string;
+  employmentType?: string;
+  netMonthlyIncome?: string;
+  paymentMode?: string;
+  companyOrBusinessName?: string;
+  companyPinCode?: string;
+  salarySlipDocument?: string;
+  desiredAmount?: string;
+
+  // Legacy fields (keep for backward compatibility)
+  fullName?: string;
+  email?: string;
+  phoneNumber?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  pancardNumber?: string;
+  isVerified?: boolean;
+  pinCode?: string;
+  maritalStatus?: string;
+  role?: "user" | "admin";
+  authProvider?: "phone-number" | "google" | "apple";
+  authProviderId?: string;
+  origin?: string;
 }
 
+// You can also create separate interfaces for better type safety
+export interface BusinessLoanLead {
+  _id: string;
+  businessType: string;
+  turnover: string;
+  loanAmount: string;
+  mobileNumber: string;
+  emiTenure: string;
+  platform: string;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
+export interface PersonalLoanLead {
+  _id: string;
+  loanPurpose: string;
+  monthlyIncome: string;
+  loanAmountRequired: string;
+  emiTenure: string;
+  mobileNumber: string;
+  platform: string;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
+export interface AppLoanLead {
+  _id: string;
+  userId: string;
+  employmentType: string;
+  netMonthlyIncome: string;
+  paymentMode: string;
+  companyOrBusinessName: string;
+  companyPinCode: string;
+  salarySlipDocument: string;
+  desiredAmount: string;
+  status: string;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
+// Union type for all lead types
+// export type Lead = BusinessLoanLead | PersonalLoanLead | AppLoanLead;
+
+// Type guard functions to check lead type
+export function isBusinessLoanLead(lead: User): lead is BusinessLoanLead {
+  return "businessType" in lead && lead.businessType !== undefined;
+}
+
+export function isPersonalLoanLead(lead: User): lead is PersonalLoanLead {
+  return "loanPurpose" in lead && lead.loanPurpose !== undefined;
+}
+
+export function isAppLoanLead(lead: User): lead is AppLoanLead {
+  return "employmentType" in lead && lead.employmentType !== undefined;
+}
 export interface ApiResponse<T> {
   success: boolean;
   status: number;
