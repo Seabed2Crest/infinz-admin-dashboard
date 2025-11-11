@@ -433,8 +433,21 @@ class ApiClient {
     });
   }
 
-  async getAdminUsers(): Promise<ApiResponse<{ users: User[] }>> {
-    return this.request<{ users: User[] }>("/admin/leads");
+  async getAdminUsers(params?: Record<string, any>): Promise<
+    ApiResponse<{
+      users: User[];
+      total: number;
+      totalPages: number;
+      currentPage: number;
+    }>
+  > {
+    const queryString = new URLSearchParams(params || {}).toString();
+    return this.request<{
+      users: User[];
+      total: number;
+      totalPages: number;
+      currentPage: number;
+    }>(`/admin/leads?${queryString}`);
   }
 
   async getAdminLoans(): Promise<ApiResponse<any[]>> {
@@ -586,7 +599,8 @@ export const adminApi = {
 
   login: (email: string, password: string) =>
     apiClient.adminLogin(email, password),
-  getUsers: () => apiClient.getAdminUsers(),
+  getUsers: (params: Record<string, any>) => apiClient.getAdminUsers(params),
+
   getLoans: () => apiClient.getAdminLoans(),
   getDashboardStats: () => apiClient.getAdminDashboardStats(),
   forgotPassword: (email: string) => apiClient.adminForgotPassword(email),

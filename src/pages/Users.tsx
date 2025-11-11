@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,108 +35,77 @@ import { adminApi } from "@/lib/api";
 
 const Users = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [sourceFilter, setSourceFilter] = useState("all");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
+  const [loanTypeFilter, setLoanTypeFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
-  const [ageFilter, setAgeFilter] = useState("all");
+  const [ageFilter, setAgeFilter] = useState("all"); // ✅ Added back age filter
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
-  // Fetch users from API
+  // ✅ Debounce search input (300ms)
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // ✅ Fetch users with filters
   const {
     data: usersData,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["admin-users"],
-    queryFn: adminApi.getUsers,
+    queryKey: [
+      "admin-users",
+      debouncedSearch,
+      loanTypeFilter,
+      platformFilter,
+      ageFilter,
+      page,
+    ],
+    queryFn: () =>
+      adminApi.getUsers({
+        search: debouncedSearch,
+        loanType: loanTypeFilter,
+        platform: platformFilter,
+        ageRange: ageFilter, // ✅ added back age range param
+        page,
+        limit,
+      }),
+    placeholderData: (prev) => prev,
     retry: 2,
   });
 
   const users = usersData?.data?.users || [];
+  const totalPages = usersData?.data?.totalPages || 1;
+  const total = usersData?.data?.total || 0;
 
-  // ✅ Moved here to prevent "Cannot access before initialization" error
+  // ✅ Utility: Calculate Age
   const calculateAge = (dateOfBirth: string) => {
     if (!dateOfBirth) return null;
     const birthDate = new Date(dateOfBirth);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-
     if (
       monthDiff < 0 ||
       (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
+    )
       age--;
-    }
-
     return age;
   };
 
-  // Filters
-  const filteredUsers = users.filter((user: any) => {
-    const term = searchTerm.toLowerCase();
-    const matchesSearch =
-      !searchTerm ||
-      user.mobileNumber?.toLowerCase().includes(term) ||
-      user.source?.toLowerCase().includes(term) ||
-      user.businessType?.toLowerCase().includes(term) ||
-      user.loanPurpose?.toLowerCase().includes(term) ||
-      user.employmentType?.toLowerCase().includes(term) ||
-      user.userName?.toLowerCase().includes(term) ||
-      user.companyOrBusinessName?.toLowerCase().includes(term);
-
-    const matchesSource =
-      sourceFilter === "all" ||
-      user.source?.toLowerCase().includes(sourceFilter.toLowerCase());
-
-    const matchesPlatform =
-      platformFilter === "all" ||
-      user.platform?.toLowerCase() === platformFilter.toLowerCase();
-
-    // Age filter logic
-    let matchesAge = true;
-    if (ageFilter !== "all" && user.dateOfBirth) {
-      const age = calculateAge(user.dateOfBirth);
-      if (age !== null) {
-        switch (ageFilter) {
-          case "23-25":
-            matchesAge = age >= 23 && age <= 25;
-            break;
-          case "26-35":
-            matchesAge = age >= 26 && age <= 35;
-            break;
-          case "36-45":
-            matchesAge = age >= 36 && age <= 45;
-            break;
-          case "46-60":
-            matchesAge = age >= 46 && age <= 60;
-            break;
-          case "60+":
-            matchesAge = age > 60;
-            break;
-          default:
-            matchesAge = true;
-        }
-      } else {
-        matchesAge = false;
-      }
-    } else if (ageFilter !== "all" && !user.dateOfBirth) {
-      matchesAge = false;
-    }
-
-    return matchesSearch && matchesSource && matchesPlatform && matchesAge;
-  });
-
-  const getSourceColor = (source: string) => {
-    if (source?.includes("personal")) return "bg-blue-100 text-blue-800";
-    if (source?.includes("business")) return "bg-purple-100 text-purple-800";
-    if (source === "android" || source === "ios")
-      return "bg-green-100 text-green-800";
+  // ✅ Loan type color badge
+  const getLoanTypeColor = (loanType: string) => {
+    if (loanType === "personal") return "bg-blue-100 text-blue-800";
+    if (loanType === "business") return "bg-purple-100 text-purple-800";
     return "bg-gray-100 text-gray-800";
   };
 
+  // ✅ Card View
   const renderCardView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-      {filteredUsers.map((user: any) => {
+      {users.map((user: any) => {
         const age = calculateAge(user.dateOfBirth);
 
         return (
@@ -164,12 +135,11 @@ const Users = () => {
               </div>
               <Badge
                 variant="outline"
-                className={`${getSourceColor(
-                  user.source || ""
+                className={`${getLoanTypeColor(
+                  user.loanType || ""
                 )} border-0 capitalize`}
               >
-                {user.source?.replace(/_/g, " ").replace("website", "") ||
-                  "N/A"}
+                {user.loanType || "N/A"}
               </Badge>
             </div>
 
@@ -194,15 +164,6 @@ const Users = () => {
                   </>
                 )}
 
-                {user.employmentType && (
-                  <>
-                    <p className="text-gray-500">Employment</p>
-                    <p className="text-gray-800 font-medium capitalize">
-                      {user.employmentType.replace(/-/g, " ")}
-                    </p>
-                  </>
-                )}
-
                 {user.loanPurpose && (
                   <>
                     <p className="text-gray-500">Loan Purpose</p>
@@ -212,21 +173,12 @@ const Users = () => {
                   </>
                 )}
 
-                {user.status && (
+                {user.employmentType && (
                   <>
-                    <p className="text-gray-500">Status</p>
-                    <Badge
-                      variant="outline"
-                      className={`${
-                        user.status === "completed"
-                          ? "bg-green-100 text-green-800"
-                          : user.status === "rejected"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      } border-0 capitalize w-fit`}
-                    >
-                      {user.status}
-                    </Badge>
+                    <p className="text-gray-500">Employment</p>
+                    <p className="text-gray-800 font-medium capitalize">
+                      {user.employmentType.replace(/-/g, " ")}
+                    </p>
                   </>
                 )}
 
@@ -250,6 +202,7 @@ const Users = () => {
     </div>
   );
 
+  // ✅ Table View
   const renderTableView = () => (
     <div className="overflow-x-auto">
       <Table>
@@ -257,49 +210,29 @@ const Users = () => {
           <TableRow>
             <TableHead>Name/Mobile</TableHead>
             <TableHead>Age</TableHead>
-            <TableHead>Source</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>Loan Type</TableHead>
             <TableHead>Platform</TableHead>
             <TableHead>Created At</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredUsers.map((user: any) => {
+          {users.map((user: any) => {
             const age = calculateAge(user.dateOfBirth);
             return (
               <TableRow key={user._id}>
-                <TableCell className="font-medium">
+                <TableCell>
                   {user.userName || user.mobileNumber || "N/A"}
                 </TableCell>
                 <TableCell>{age !== null ? `${age} years` : "N/A"}</TableCell>
                 <TableCell>
                   <Badge
                     variant="outline"
-                    className={`${getSourceColor(
-                      user.source || ""
+                    className={`${getLoanTypeColor(
+                      user.loanType || ""
                     )} border-0 capitalize text-xs`}
                   >
-                    {user.source?.replace(/_/g, " ").replace("website", "") ||
-                      "N/A"}
+                    {user.loanType}
                   </Badge>
-                </TableCell>
-                <TableCell>
-                  {user.status ? (
-                    <Badge
-                      variant="outline"
-                      className={`${
-                        user.status === "completed"
-                          ? "bg-green-100 text-green-800"
-                          : user.status === "rejected"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      } border-0 capitalize text-xs`}
-                    >
-                      {user.status}
-                    </Badge>
-                  ) : (
-                    "N/A"
-                  )}
                 </TableCell>
                 <TableCell className="capitalize">
                   {user.platform || "web"}
@@ -319,6 +252,7 @@ const Users = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Leads Management</h2>
@@ -336,10 +270,10 @@ const Users = () => {
               value && setViewMode(value as "card" | "table")
             }
           >
-            <ToggleGroupItem value="card" aria-label="Card view">
+            <ToggleGroupItem value="card">
               <Grid3X3 className="h-4 w-4" />
             </ToggleGroupItem>
-            <ToggleGroupItem value="table" aria-label="Table view">
+            <ToggleGroupItem value="table">
               <List className="h-4 w-4" />
             </ToggleGroupItem>
           </ToggleGroup>
@@ -348,30 +282,46 @@ const Users = () => {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4 items-center">
+        {/* Search */}
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Search by mobile, name, purpose..."
             className="pl-9"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1);
+            }}
           />
         </div>
 
-        <Select value={sourceFilter} onValueChange={setSourceFilter}>
+        {/* Loan Type Filter */}
+        <Select
+          value={loanTypeFilter}
+          onValueChange={(value) => {
+            setLoanTypeFilter(value);
+            setPage(1);
+          }}
+        >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Source" />
+            <SelectValue placeholder="Loan Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Sources</SelectItem>
+            <SelectItem value="all">All Loans</SelectItem>
             <SelectItem value="personal">Personal Loan</SelectItem>
             <SelectItem value="business">Business Loan</SelectItem>
-            <SelectItem value="android">Android App</SelectItem>
-            <SelectItem value="ios">iOS App</SelectItem>
           </SelectContent>
         </Select>
 
-        <Select value={platformFilter} onValueChange={setPlatformFilter}>
+        {/* Platform Filter */}
+        <Select
+          value={platformFilter}
+          onValueChange={(value) => {
+            setPlatformFilter(value);
+            setPage(1);
+          }}
+        >
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Platform" />
           </SelectTrigger>
@@ -383,22 +333,29 @@ const Users = () => {
           </SelectContent>
         </Select>
 
-        <Select value={ageFilter} onValueChange={setAgeFilter}>
+        {/* ✅ Age Filter */}
+        <Select
+          value={ageFilter}
+          onValueChange={(value) => {
+            setAgeFilter(value);
+            setPage(1);
+          }}
+        >
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Age Range" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Ages</SelectItem>
-            <SelectItem value="23-25">23-25 years</SelectItem>
-            <SelectItem value="26-35">26-35 years</SelectItem>
-            <SelectItem value="36-45">36-45 years</SelectItem>
-            <SelectItem value="46-60">46-60 years</SelectItem>
+            <SelectItem value="23-25">23–25 years</SelectItem>
+            <SelectItem value="26-35">26–35 years</SelectItem>
+            <SelectItem value="36-45">36–45 years</SelectItem>
+            <SelectItem value="46-60">46–60 years</SelectItem>
             <SelectItem value="60+">60+ years</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Users List */}
+      {/* Users Section */}
       <Card>
         <CardContent className="p-6">
           {isLoading ? (
@@ -410,7 +367,7 @@ const Users = () => {
             <div className="text-center py-20 text-red-500">
               Error loading users. Please try again.
             </div>
-          ) : filteredUsers.length === 0 ? (
+          ) : users.length === 0 ? (
             <div className="text-center py-20 text-gray-500">
               No leads found matching your filters
             </div>
@@ -418,6 +375,29 @@ const Users = () => {
             renderCardView()
           ) : (
             renderTableView()
+          )}
+
+          {/* Pagination */}
+          {users.length > 0 && (
+            <div className="flex justify-center gap-3 items-center mt-8">
+              <Button
+                variant="outline"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                Previous
+              </Button>
+              <span className="text-gray-700 text-sm">
+                Page {page} of {totalPages} ({total} results)
+              </span>
+              <Button
+                variant="outline"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
