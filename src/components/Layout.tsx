@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Outlet, useNavigate, useLocation, NavLink } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import infinzLogo from "@/assets/logo_colour.png";
+
 import {
   Users,
   CreditCard,
@@ -9,6 +10,7 @@ import {
   LogOut,
   Key,
   ShieldCheck,
+  ReceiptText,
 } from "lucide-react";
 import {
   Sidebar,
@@ -161,6 +163,28 @@ const AppSidebar = () => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+              <SidebarMenuItem key={"/blogs"}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive("/blogs")}
+                  tooltip={state === "collapsed" ? "Blogs" : undefined}
+                  className="w-full justify-start"
+                >
+                  <NavLink
+                    to={"/admin/blogs"}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
+                        isActive
+                          ? "bg-accent text-accent-foreground"
+                          : "hover:bg-accent hover:text-accent-foreground"
+                      }`
+                    }
+                  >
+                    <ReceiptText className="h-4 w-4" />
+                    <span className="text-sm font-medium">Blogs</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

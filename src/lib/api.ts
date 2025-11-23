@@ -1,6 +1,6 @@
 // API Configuration
-const API_BASE_URL = "https://backend.infinz.seabed2crest.com/api/v1";
-// export const API_BASE_URL = "http://localhost:8085/api/v1";
+// const API_BASE_URL = "https://backend.infinz.seabed2crest.com/api/v1";
+export const API_BASE_URL = "http://localhost:8085/api/v1";
 
 // Types
 export interface EmploymentDetails {
@@ -17,6 +17,17 @@ export interface EmploymentDetails {
     | "business-owner"
     | "unemployed"
     | "other";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Blog {
+  _id?: string;
+  title: string;
+  slug: string;
+  thumbnail?: string;
+  category?: string;
+  content: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -275,6 +286,48 @@ class ApiClient {
     );
   }
 
+  async exportFilteredLeads(params: Record<string, string>): Promise<Blob> {
+    const query = new URLSearchParams(params).toString();
+    const url = `${this.baseURL}/admin/export-filtered-leads?${query}`;
+
+    const adminToken = localStorage.getItem("adminToken");
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        ...(adminToken && { Authorization: `Bearer ${adminToken}` }),
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Export failed: ${errorText}`);
+    }
+
+    return await response.blob();
+  }
+
+  // ✅ Get Last Downloaded Date
+  async getLastDownload(): Promise<{ lastDownload: string | null }> {
+    const url = `${this.baseURL}/admin/last-download`;
+
+    const adminToken = localStorage.getItem("adminToken");
+
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(adminToken && { Authorization: `Bearer ${adminToken}` }),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch last download");
+    }
+
+    const data = await response.json();
+    return { lastDownload: data?.lastDownload || null };
+  }
+
   // Download Logs API
   async getDownloadLogs(params?: {
     page?: number;
@@ -516,6 +569,43 @@ class ApiClient {
     });
   }
 
+  async getAllBlogs(): Promise<ApiResponse<Blog[]>> {
+    return this.request<Blog[]>("/blogs");
+  }
+
+  async getBlogById(id: string): Promise<ApiResponse<Blog>> {
+    return this.request<Blog>(`/blogs/${id}`);
+  }
+
+  async getBlogBySlug(slug: string): Promise<ApiResponse<Blog>> {
+    return this.request<Blog>(`/blogs/slug/${slug}`);
+  }
+
+  async createBlog(
+    payload: Omit<Blog, "_id" | "createdAt" | "updatedAt">
+  ): Promise<ApiResponse<Blog>> {
+    return this.request<Blog>("/blogs", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateBlog(
+    id: string,
+    payload: Partial<Blog>
+  ): Promise<ApiResponse<Blog>> {
+    return this.request<Blog>(`/blogs/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteBlog(id: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/blogs/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   async getEmployeePermissions(
     employeeId: string
   ): Promise<ApiResponse<{ permissions: Record<string, string[]> }>> {
@@ -535,6 +625,11 @@ class ApiClient {
         body: JSON.stringify({ permissions: payload.permissions }),
       }
     );
+  }
+  // NEW: Get all pincodes (initial page load or search)
+  async getPincodes(search?: string): Promise<ApiResponse<string[]>> {
+    const query = search ? `?search=${search}` : "";
+    return this.request<string[]>(`/admin/pincodes${query}`);
   }
 }
 
@@ -588,6 +683,9 @@ export const userApi = {
 
 // Admin API
 export const adminApi = {
+  // NEW: Fetch all pincodes
+  getPincodes: (search?: string) => apiClient.getPincodes(search),
+
   getDownloadLogs: (params?: {
     page?: number;
     limit?: number;
@@ -596,7 +694,10 @@ export const adminApi = {
     startDate?: string;
     endDate?: string;
   }) => apiClient.getDownloadLogs(params),
+  exportFilteredLeads: (params: Record<string, string>) =>
+    apiClient.exportFilteredLeads(params),
 
+  getLastDownload: () => apiClient.getLastDownload(),
   login: (email: string, password: string) =>
     apiClient.adminLogin(email, password),
   getUsers: (params: Record<string, any>) => apiClient.getAdminUsers(params),
@@ -626,11 +727,49 @@ export const adminApi = {
       phoneNumber: string;
       permissions: Record<string, string[]>;
     }
-  ) => apiClient.updateEmployee(employeeId, payload), // ✅ added
+  ) => apiClient.updateEmployee(employeeId, payload),
   getEmployeePermissions: (employeeId: string) =>
     apiClient.getEmployeePermissions(employeeId),
   updateEmployeePermissions: (payload: {
     id: string;
     permissions: Record<string, string[]>;
   }) => apiClient.updateEmployeePermissions(payload),
+};
+
+export const blogApi = {
+  getAll: () => apiClient.getAllBlogs(),
+  getById: (id: string) => apiClient.getBlogById(id),
+  getBySlug: (slug: string) => apiClient.getBlogBySlug(slug),
+  create: (payload: Omit<Blog, "_id" | "createdAt" | "updatedAt">) =>
+    apiClient.createBlog(payload),
+  update: (id: string, data: Partial<Blog>) => apiClient.updateBlog(id, data),
+  delete: (id: string) => apiClient.deleteBlog(id),
+};
+
+export const fileApi = {
+  getPresigned: async (file: File) => {
+    const res = await fetch(`${API_BASE_URL}/presigned-url`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        files: [
+          {
+            fileName: file.name,
+            fileType: file.type,
+          },
+        ],
+        uploadType: "blogs",
+      }),
+    });
+
+    return res.json();
+  },
+
+  uploadToS3: async (url: string, file: File) => {
+    return fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+  },
 };

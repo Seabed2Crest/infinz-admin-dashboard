@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { validateEnv } from "@/config/env";
 import { toast } from "sonner";
+
+// Pages
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -21,12 +23,15 @@ import NotFound from "./pages/NotFound";
 import EmployeeForm from "./pages/EmployeeForm";
 import DownloadLogsPage from "./pages/Logs";
 
+// BLOG PAGES
+import BlogList from "./pages/BlogList";
+import BlogForm from "./pages/BlogForm";
+
 const queryClient = new QueryClient();
 
-// Validate environment variables on app startup
-validateEnv();
-
-// Protected Route Component
+// ==========================
+//  AUTH PROTECTED ROUTE
+// ==========================
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
@@ -46,8 +51,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
-// Optional: route-level permission guard wrapper
-
+// ==========================
+//  PERMISSION ROUTE
+// ==========================
 interface RequirePermissionProps {
   module: string;
   action: string;
@@ -71,7 +77,7 @@ const RequirePermission = ({
 
       const raw = localStorage.getItem("adminPermissions");
       if (!raw) {
-        setAllowed(true); // default allow if no permissions set
+        setAllowed(true);
         return;
       }
 
@@ -85,7 +91,7 @@ const RequirePermission = ({
         toast.error("You do not have permission to access this page");
       }
     } catch (err) {
-      setAllowed(true); // fallback allow
+      setAllowed(true);
     }
   }, [module, action]);
 
@@ -104,6 +110,9 @@ const RequirePermission = ({
   return <>{children}</>;
 };
 
+// ==========================
+//  APP ROUTER
+// ==========================
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -111,9 +120,12 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* PUBLIC ROUTES */}
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+          {/* PROTECTED AREA */}
           <Route
             path="/*"
             element={
@@ -122,16 +134,34 @@ const App = () => (
               </ProtectedRoute>
             }
           >
+            {/* DASHBOARD */}
             <Route path="dashboard" element={<Dashboard />} />
+
+            {/* USERS */}
             <Route path="leads" element={<Users />} />
-            <Route path="logs" element={<DownloadLogsPage />} />
             <Route path="user-details/:userId" element={<UserDetails />} />
+
+            {/* LOAN REQUESTS */}
             <Route path="loan-requests" element={<LoanRequests />} />
+
+            {/* BUSINESS MGMT */}
             <Route
               path="business-management"
               element={<BusinessManagement />}
             />
+
+            {/* LEADS MGMT */}
             <Route path="leads-management" element={<LeadsManagement />} />
+
+            {/* DOWNLOAD LOGS */}
+            <Route path="logs" element={<DownloadLogsPage />} />
+
+            {/* BLOG ROUTES (FIXED) */}
+            <Route path="admin/blogs" element={<BlogList />} />
+            <Route path="admin/blogs/add" element={<BlogForm />} />
+            <Route path="admin/blogs/edit/:id" element={<BlogForm />} />
+
+            {/* ROLES & PERMISSIONS */}
             <Route
               path="roles-permissions"
               element={
@@ -140,7 +170,8 @@ const App = () => (
                 </RequirePermission>
               }
             />
-            <Route path="reset-password" element={<ResetPassword />} />
+
+            {/* EMPLOYEE MGMT */}
             <Route
               path="roles-permissions/create-employee"
               element={<EmployeeForm />}
@@ -149,7 +180,12 @@ const App = () => (
               path="roles-permissions/update-employee/:employeeId"
               element={<EmployeeForm />}
             />
+
+            {/* RESET PASSWORD */}
+            <Route path="reset-password" element={<ResetPassword />} />
           </Route>
+
+          {/* 404 FALLBACK */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
