@@ -183,6 +183,19 @@ const AppSidebar = () => {
                     <ReceiptText className="h-4 w-4" />
                     <span className="text-sm font-medium">Blogs</span>
                   </NavLink>
+                  <NavLink
+                    to={"/admin/testimonials"}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
+                        isActive
+                          ? "bg-accent text-accent-foreground"
+                          : "hover:bg-accent hover:text-accent-foreground"
+                      }`
+                    }
+                  >
+                    <ReceiptText className="h-4 w-4" />
+                    <span className="text-sm font-medium">Testimonials</span>
+                  </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
