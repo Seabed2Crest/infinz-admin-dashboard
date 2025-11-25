@@ -5,13 +5,13 @@ import infinzLogo from "@/assets/logo_colour.png";
 
 import {
   Users,
-  CreditCard,
   BarChart3,
   LogOut,
   Key,
   ShieldCheck,
   ReceiptText,
 } from "lucide-react";
+
 import {
   Sidebar,
   SidebarContent,
@@ -46,25 +46,18 @@ const menuItems = [
     module: "leads",
     action: "view",
   },
-  // {
-  //   icon: CreditCard,
-  //   label: "Loan Requests",
-  //   path: "/loan-requests",
-  //   module: "loan-requests",
-  //   action: "view",
-  // },
   {
     icon: ShieldCheck,
     label: "Roles & Permissions",
     path: "/roles-permissions",
-    module: "employee-management", // 👈 matches backend "employee-management"
+    module: "employee-management",
     action: "view",
   },
   {
     icon: ShieldCheck,
     label: "Logs",
     path: "/logs",
-    module: "logs", // 👈 matches backend "employee-management"
+    module: "logs",
     action: "view",
   },
 ] as const;
@@ -76,7 +69,6 @@ function hasPermission(module: string, action: string): boolean {
   try {
     const accessLevel = localStorage.getItem("adminAccessLevel");
 
-    // ✅ God-level users see everything
     if (accessLevel === "god_level") return true;
 
     const raw = localStorage.getItem("adminPermissions");
@@ -87,11 +79,9 @@ function hasPermission(module: string, action: string): boolean {
       actions: string[];
     }[];
 
-    // ✅ Find module like "employee-management"
     const found = perms.find((p) => p.module === module);
     if (!found) return false;
 
-    // ✅ Check if the given action is allowed
     return found.actions.includes(action);
   } catch (error) {
     console.error("Permission check error:", error);
@@ -134,7 +124,7 @@ const AppSidebar = () => {
 
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {/* ✅ Dynamically show items only if user has permission */}
+              {/* Main Items */}
               {menuItems
                 .filter((item) => hasPermission(item.module, item.action))
                 .map((item) => (
@@ -163,15 +153,19 @@ const AppSidebar = () => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-              <SidebarMenuItem key={"/blogs"}>
+
+              {/* ------------------------------ */}
+              {/* BLOGS                         */}
+              {/* ------------------------------ */}
+              <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  isActive={isActive("/blogs")}
+                  isActive={location.pathname.startsWith("/admin/blogs")}
                   tooltip={state === "collapsed" ? "Blogs" : undefined}
                   className="w-full justify-start"
                 >
                   <NavLink
-                    to={"/admin/blogs"}
+                    to="/admin/blogs"
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
                         isActive
@@ -183,8 +177,21 @@ const AppSidebar = () => {
                     <ReceiptText className="h-4 w-4" />
                     <span className="text-sm font-medium">Blogs</span>
                   </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* ------------------------------ */}
+              {/* TESTIMONIALS                   */}
+              {/* ------------------------------ */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname.startsWith("/admin/testimonials")}
+                  tooltip={state === "collapsed" ? "Testimonials" : undefined}
+                  className="w-full justify-start"
+                >
                   <NavLink
-                    to={"/admin/testimonials"}
+                    to="/admin/testimonials"
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
                         isActive
@@ -206,7 +213,6 @@ const AppSidebar = () => {
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {/* Change Password */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
@@ -225,7 +231,6 @@ const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* Logout */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={handleLogout}
@@ -250,7 +255,6 @@ const AppSidebar = () => {
 const Layout = () => {
   const location = useLocation();
 
-  // Reset scroll when route changes
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
@@ -261,7 +265,6 @@ const Layout = () => {
         <AppSidebar />
 
         <SidebarInset className="flex flex-col w-full">
-          {/* HEADER */}
           <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-6 py-4 h-16 flex items-center">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-4">
@@ -276,7 +279,6 @@ const Layout = () => {
             </div>
           </header>
 
-          {/* PAGE CONTENT */}
           <main className="flex-1 px-6 py-6">
             <Outlet />
           </main>
