@@ -26,6 +26,8 @@ import DownloadLogsPage from "./pages/Logs";
 // BLOG PAGES
 import BlogList from "./pages/BlogList";
 import BlogForm from "./pages/BlogForm";
+import TestimonialsList from "./pages/TestimonialsList";
+import AddTestimonial from "./pages/AddTestimonial";
 
 const queryClient = new QueryClient();
 
@@ -160,6 +162,8 @@ const App = () => (
             <Route path="admin/blogs" element={<BlogList />} />
             <Route path="admin/blogs/add" element={<BlogForm />} />
             <Route path="admin/blogs/edit/:id" element={<BlogForm />} />
+            <Route path="admin/testimonials" element={<TestimonialsList />} />
+            <Route path="admin/testimonials/add" element={<AddTestimonial />} />
 
             {/* ROLES & PERMISSIONS */}
             <Route

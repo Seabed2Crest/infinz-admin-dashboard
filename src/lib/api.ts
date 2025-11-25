@@ -1,6 +1,21 @@
 // API Configuration
-// const API_BASE_URL = "https://backend.infinz.seabed2crest.com/api/v1";
-export const API_BASE_URL = "http://localhost:8085/api/v1";
+const API_BASE_URL = "https://backend.infinz.seabed2crest.com/api/v1";
+// export const API_BASE_URL = "http://localhost:8085/api/v1";
+// ⭐ NEW: Testimonial Type
+export interface Testimonial {
+  _id?: string;
+  name: string;
+  role: string;
+  location: string;
+  rating: number;
+  savedAmount: number;
+  savedType: string;
+  testimonial: string;
+  category: "business" | "home" | "personal";
+  image: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 // Types
 export interface EmploymentDetails {
@@ -213,6 +228,41 @@ class ApiClient {
   constructor(baseURL: string) {
     this.baseURL = baseURL;
   }
+
+  // ⭐ NEW: Testimonials API
+async getAllTestimonials(): Promise<ApiResponse<Testimonial[]>> {
+  return this.request<Testimonial[]>("/testimonials");
+}
+
+async getTestimonialById(id: string): Promise<ApiResponse<Testimonial>> {
+  return this.request<Testimonial>(`/testimonials/${id}`);
+}
+
+async createTestimonial(
+  payload: Omit<Testimonial, "_id" | "createdAt" | "updatedAt">
+): Promise<ApiResponse<Testimonial>> {
+  return this.request<Testimonial>("/testimonials", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+async updateTestimonial(
+  id: string,
+  payload: Partial<Testimonial>
+): Promise<ApiResponse<Testimonial>> {
+  return this.request<Testimonial>(`/testimonials/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+async deleteTestimonial(id: string): Promise<ApiResponse<{ message: string }>> {
+  return this.request<{ message: string }>(`/testimonials/${id}`, {
+    method: "DELETE",
+  });
+}
+
 
   private async request<T>(
     endpoint: string,
@@ -773,3 +823,18 @@ export const fileApi = {
     });
   },
 };
+
+
+// ⭐ NEW: Testimonial API Exports
+export const testimonialApi = {
+  getAll: () => apiClient.getAllTestimonials(),
+  getById: (id: string) => apiClient.getTestimonialById(id),
+  create: (payload: Omit<Testimonial, "_id" | "createdAt" | "updatedAt">) =>
+    apiClient.createTestimonial(payload),
+  update: (id: string, payload: Partial<Testimonial>) =>
+    apiClient.updateTestimonial(id, payload),
+  delete: (id: string) => apiClient.deleteTestimonial(id),
+};
+
+
+
