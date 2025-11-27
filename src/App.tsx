@@ -28,6 +28,7 @@ import BlogList from "./pages/BlogList";
 import BlogForm from "./pages/BlogForm";
 import TestimonialsList from "./pages/TestimonialsList";
 import AddTestimonial from "./pages/AddTestimonial";
+import UtmLink from "./pages/LoanTable";
 
 const queryClient = new QueryClient();
 
@@ -164,7 +165,10 @@ const App = () => (
             <Route path="admin/blogs/edit/:id" element={<BlogForm />} />
             <Route path="admin/testimonials" element={<TestimonialsList />} />
             <Route path="admin/testimonials/add" element={<AddTestimonial />} />
-
+            <Route
+              path="admin/utm-links"
+              element={<UtmLink />}
+            />
             {/* ROLES & PERMISSIONS */}
             <Route
               path="roles-permissions"
@@ -184,6 +188,7 @@ const App = () => (
               path="roles-permissions/update-employee/:employeeId"
               element={<EmployeeForm />}
             />
+
 
             {/* RESET PASSWORD */}
             <Route path="reset-password" element={<ResetPassword />} />

@@ -205,6 +205,28 @@ const AppSidebar = () => {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname.startsWith("/admin/testimonials")}
+                  tooltip={state === "collapsed" ? "Testimonials" : undefined}
+                  className="w-full justify-start"
+                >
+                  <NavLink
+                    to="/admin/utm-links"
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
+                        isActive
+                          ? "bg-accent text-accent-foreground"
+                          : "hover:bg-accent hover:text-accent-foreground"
+                      }`
+                    }
+                  >
+                    <ReceiptText className="h-4 w-4" />
+                    <span className="text-sm font-medium">UTM Links</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
