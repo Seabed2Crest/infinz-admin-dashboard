@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, ArrowLeft, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowLeft, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,55 +7,43 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-
-// Initial data
-const initialLoans = [
-  {
-    id: 1,
-    priority: 1,
-    bankName: 'INCRED',
-    loanAmount: '50K to 15 Lakhs',
-    salary: '15K',
-    age: '21-56',
-    additionalCondition1: '',
-    additionalCondition2: '',
-    additionalCondition3: '',
-    pincodeType: 'SHARED',
-    pincodes: [],
-    utmLink: 'https://www.incred.com/personal-loan/?partnerid=7804017114710849&utm_source=abcd&utm_medium=links&utm_campaign='
-  },
-  {
-    id: 2,
-    priority: 2,
-    bankName: 'TRUSTA PAISA',
-    loanAmount: '2.5K to 20K',
-    salary: '20K',
-    age: '22-50',
-    additionalCondition1: '',
-    additionalCondition2: '',
-    additionalCondition3: '',
-    pincodeType: 'SHARED',
-    pincodes: [],
-    utmLink: 'https://trustapaisa.com/?utm_source=infinu&utm_medium=cpa&clickid=je4YOURLICKID'
-  },
-  {
-    id: 3,
-    priority: 3,
-    bankName: 'WERIZE.PL',
-    loanAmount: '30K to 5 Lakhs',
-    salary: '15K',
-    age: '21-58',
-    additionalCondition1: '',
-    additionalCondition2: '',
-    additionalCondition3: '',
-    pincodeType: 'PAN INDIA',
-    pincodes: [],
-    utmLink: 'https://partner.werize.com/MyBusiness/Nakshtra%20Hospitality%20P%20Limited/2a49c44-1e10-41c5-a3cc-1d293160c'
-  }
-];
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { utmLinkApi, type UtmLink } from '@/lib/api';
+import { toast } from 'sonner';
+import * as XLSX from "xlsx";
 
 // Table Component
-const LoanTable = ({ onNavigateToAdd, loans, onEdit, onDelete }) => {
+const LoanTable = ({ onNavigateToAdd, onEdit, onDelete }) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['utm-links'],
+    queryFn: async () => {
+      const response = await utmLinkApi.getAll();
+      return response.data;
+    },
+  });
+
+  const loans = data || [];
+
+  if (isLoading) {
+    return (
+      <div className="p-6 min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading UTM Links...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Failed to load UTM Links</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 min-h-screen">
       <div className="max-w-7xl mx-auto">
@@ -84,52 +72,60 @@ const LoanTable = ({ onNavigateToAdd, loans, onEdit, onDelete }) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {loans.map((loan) => (
-                    <TableRow key={loan.id}>
-                      <TableCell>{loan.priority}</TableCell>
-                      <TableCell className="font-medium">{loan.bankName}</TableCell>
-                      <TableCell>{loan.loanAmount}</TableCell>
-                      <TableCell>{loan.salary}</TableCell>
-                      <TableCell>{loan.age}</TableCell>
-                      <TableCell>
-                        <Badge variant={loan.pincodeType === 'PAN INDIA' ? 'default' : 'secondary'}>
-                          {loan.pincodeType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs truncate">
-                          <a 
-                            href={loan.utmLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 hover:underline"
-                            title={loan.utmLink}
-                          >
-                            {loan.utmLink}
-                          </a>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => onEdit(loan)}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => onDelete(loan.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                  {loans.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                        No UTM Links found. Click "Add UTM Link" to create one.
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    loans.map((loan) => (
+                      <TableRow key={loan._id}>
+                        <TableCell>{loan.priority}</TableCell>
+                        <TableCell className="font-medium">{loan.bankName}</TableCell>
+                        <TableCell>{loan.loanAmountMin} to {loan.loanAmountMax}</TableCell>
+                        <TableCell>{loan.salary}</TableCell>
+                        <TableCell>{loan.ageMin} to {loan.ageMax}</TableCell>
+                        <TableCell>
+                          <Badge variant={loan.pincodeType === 'PAN INDIA' ? 'default' : 'secondary'}>
+                            {loan.pincodeType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-xs truncate">
+                            <a 
+                              href={loan.utmLink} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                              title={loan.utmLink}
+                            >
+                              {loan.utmLink}
+                            </a>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => onEdit(loan)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => onDelete(loan._id!)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -141,151 +137,257 @@ const LoanTable = ({ onNavigateToAdd, loans, onEdit, onDelete }) => {
 };
 
 // Add/Edit UTM Link Component
-const UTMForm = ({ onBack, onSave, editData }) => {
-  const [formData, setFormData] = useState(editData || {
-    priority: '',
-    bankName: '',
-    loanAmount: '',
-    salary: '',
-    age: '',
-    additionalCondition1: '',
-    additionalCondition2: '',
-    additionalCondition3: '',
-    pincodeType: 'PAN INDIA',
+const UTMForm = ({ onBack, editData }: { onBack: () => void; editData: UtmLink | null }) => {
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState<Omit<UtmLink, "_id" | "createdAt" | "updatedAt">>(editData ? {
+    priority: editData.priority,
+    bankName: editData.bankName,
+    loanAmountMin: editData.loanAmountMin,
+    loanAmountMax: editData.loanAmountMax,
+    salary: editData.salary,
+    ageMin: editData.ageMin,
+    ageMax: editData.ageMax,
+    pincodeType: editData.pincodeType,
+    pincodes: editData.pincodes || [],
+    conditions: editData.conditions || [],
+    utmLink: editData.utmLink
+  } : {
+    priority: 0,
+    bankName: "",
+    loanAmountMin: "",
+    loanAmountMax: "",
+    salary: "",
+    ageMin: "",
+    ageMax: "",
+    pincodeType: "PAN INDIA",
     pincodes: [],
-    utmLink: ''
+    conditions: [],
+    utmLink: ""
   });
 
-  const [pincodeInput, setPincodeInput] = useState('');
+  const [pincodeInput, setPincodeInput] = useState("");
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
+  // ======================
+  // HANDLE EXCEL UPLOAD
+// ======================
+// HANDLE EXCEL UPLOAD
+// ======================
+const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = (evt) => {
+    const binaryStr = evt.target?.result as string;
+
+    const workbook = XLSX.read(binaryStr, { type: "binary" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+
+    // Tell TS what rows look like
+    type ExcelRow = {
+      pincode?: string | number;
+      Pincode?: string | number;
+      [key: string]: any;
+    };
+
+    const data: ExcelRow[] = XLSX.utils.sheet_to_json(sheet);
+
+    const extracted = data
+      .map((row) => String(row.pincode || row.Pincode || "").trim())
+      .filter((v) => v !== "");
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      pincodes: [...prev.pincodes, ...extracted],
     }));
   };
 
-  const handlePincodeTypeChange = (value) => {
-    setFormData(prev => ({
+  reader.readAsBinaryString(file);
+};
+
+
+  const createMutation = useMutation({
+    mutationFn: (data: Omit<UtmLink, "_id" | "createdAt" | "updatedAt">) =>
+      utmLinkApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['utm-links'] });
+      toast.success('UTM Link created successfully');
+      onBack();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to create UTM Link');
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<UtmLink> }) =>
+      utmLinkApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['utm-links'] });
+      toast.success('UTM Link updated successfully');
+      onBack();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update UTM Link');
+    },
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
       ...prev,
-      pincodeType: value,
-      pincodes: value === 'PAN INDIA' ? [] : prev.pincodes
+      [name]: name === 'priority' ? Number(value) : value,
     }));
-    if (value === 'PAN INDIA') {
-      setPincodeInput('');
-    }
+  };
+
+  const handlePincodeTypeChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      pincodeType: value as "PAN INDIA" | "SHARED",
+      pincodes: value === "PAN INDIA" ? [] : prev.pincodes,
+    }));
+    if (value === "PAN INDIA") setPincodeInput("");
   };
 
   const handleAddPincode = () => {
     if (pincodeInput.trim() && !formData.pincodes.includes(pincodeInput.trim())) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        pincodes: [...prev.pincodes, pincodeInput.trim()]
+        pincodes: [...prev.pincodes, pincodeInput.trim()],
       }));
-      setPincodeInput('');
+      setPincodeInput("");
     }
   };
 
-  const handleRemovePincode = (pincode) => {
-    setFormData(prev => ({
+  const handleRemovePincode = (pin) => {
+    setFormData((prev) => ({
       ...prev,
-      pincodes: prev.pincodes.filter(p => p !== pincode)
+      pincodes: prev.pincodes.filter((x) => x !== pin),
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(formData);
+  // ==========================
+  // DYNAMIC CONDITIONS
+  // ==========================
+  const addCondition = () => {
+    setFormData(prev => ({
+      ...prev,
+      conditions: [...prev.conditions, { key: "", value: "" }]
+    }));
   };
+
+  const updateCondition = (index, field, value) => {
+    const updated = [...formData.conditions];
+    updated[index][field] = value;
+    setFormData(prev => ({ ...prev, conditions: updated }));
+  };
+
+  const removeCondition = (index) => {
+    const updated = [...formData.conditions];
+    updated.splice(index, 1);
+    setFormData(prev => ({ ...prev, conditions: updated }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (editData?._id) {
+      updateMutation.mutate({ id: editData._id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const isLoading = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="p-6 min-h-screen">
       <div className="max-w-4xl mx-auto">
-        <Button
-          variant="ghost"
-          onClick={onBack}
-          className="mb-6"
-        >
+        <Button variant="ghost" onClick={onBack} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to List
         </Button>
 
         <Card>
           <CardHeader>
-            <CardTitle>{editData ? 'Edit UTM Link' : 'Add New UTM Link'}</CardTitle>
+            <CardTitle>{editData ? "Edit UTM Link" : "Add New UTM Link"}</CardTitle>
           </CardHeader>
+
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* BASIC FIELDS */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="priority">Priority</Label>
-                  <Input
-                    id="priority"
-                    name="priority"
-                    type="number"
-                    value={formData.priority}
-                    onChange={handleChange}
-                    required
+                <div>
+                  <Label>Priority</Label>
+                  <Input 
+                    name="priority" 
+                    type="number" 
+                    value={formData.priority || ''} 
+                    onChange={handleChange} 
+                    required 
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="bankName">Bank / NBFC Name</Label>
-                  <Input
-                    id="bankName"
-                    name="bankName"
-                    value={formData.bankName}
-                    onChange={handleChange}
-                    required
+                <div>
+                  <Label>Bank Name</Label>
+                  <Input name="bankName" value={formData.bankName} onChange={handleChange} required />
+                </div>
+
+                <div>
+                  <Label>Loan Amount (Min)</Label>
+                  <Input 
+                    name="loanAmountMin" 
+                    value={formData.loanAmountMin} 
+                    onChange={handleChange} 
+                    placeholder="e.g., 50K"
+                    required 
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="loanAmount">Loan Amount</Label>
-                  <Input
-                    id="loanAmount"
-                    name="loanAmount"
-                    value={formData.loanAmount}
-                    onChange={handleChange}
-                    placeholder="e.g., 50K to 15 Lakhs"
-                    required
+                <div>
+                  <Label>Loan Amount (Max)</Label>
+                  <Input 
+                    name="loanAmountMax" 
+                    value={formData.loanAmountMax} 
+                    onChange={handleChange} 
+                    placeholder="e.g., 15 Lakhs"
+                    required 
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="salary">Salary</Label>
-                  <Input
-                    id="salary"
-                    name="salary"
-                    value={formData.salary}
-                    onChange={handleChange}
-                    placeholder="e.g., 15K"
-                    required
+                <div>
+                  <Label>Salary</Label>
+                  <Input name="salary" value={formData.salary} onChange={handleChange} required />
+                </div>
+
+                <div>
+                  <Label>Age (Min)</Label>
+                  <Input 
+                    name="ageMin" 
+                    value={formData.ageMin} 
+                    onChange={handleChange} 
+                    placeholder="e.g., 21"
+                    required 
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    name="age"
-                    value={formData.age}
-                    onChange={handleChange}
-                    placeholder="e.g., 21-56"
-                    required
+                <div>
+                  <Label>Age (Max)</Label>
+                  <Input 
+                    name="ageMax" 
+                    value={formData.ageMax} 
+                    onChange={handleChange} 
+                    placeholder="e.g., 56"
+                    required 
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="pincodeType">Pincode Type</Label>
-                  <Select
-                    value={formData.pincodeType}
-                    onValueChange={handlePincodeTypeChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                <div>
+                  <Label>Pincode Type</Label>
+                  <Select value={formData.pincodeType} onValueChange={handlePincodeTypeChange}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="PAN INDIA">PAN INDIA</SelectItem>
                       <SelectItem value="SHARED">SHARED</SelectItem>
@@ -294,93 +396,88 @@ const UTMForm = ({ onBack, onSave, editData }) => {
                 </div>
               </div>
 
-              {formData.pincodeType === 'SHARED' && (
-                <div className="space-y-2">
-                  <Label htmlFor="pincodes">Pincodes</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="pincodes"
-                      value={pincodeInput}
-                      onChange={(e) => setPincodeInput(e.target.value)}
-                      placeholder="Enter pincode"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddPincode();
-                        }
-                      }}
-                    />
-                    <Button type="button" onClick={handleAddPincode}>
-                      Add
-                    </Button>
+              {/* PINCODE SECTION */}
+              {formData.pincodeType === "SHARED" && (
+                <>
+                  <Label>Pincodes</Label>
+
+                  {/* Excel Upload */}
+                  <div className="space-y-2">
+                    <Label>Upload Excel (xlsx/csv)</Label>
+                    <Input type="file" accept=".xlsx,.xls,.csv" onChange={handleExcelUpload} />
                   </div>
-                  {formData.pincodes.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {formData.pincodes.map((pincode, index) => (
-                        <Badge key={index} variant="secondary" className="text-sm">
-                          {pincode}
-                          <button
-                            type="button"
-                            onClick={() => handleRemovePincode(pincode)}
-                            className="ml-2 hover:text-red-600"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
+
+                  {/* Manual Add */}
+                  <div className="flex gap-2 mt-2">
+                    <Input value={pincodeInput} onChange={(e) => setPincodeInput(e.target.value)} placeholder="Enter pincode" />
+                    <Button type="button" onClick={handleAddPincode}>Add</Button>
+                  </div>
+
+                  {/* Show Pincodes */}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {formData.pincodes.map((pin, i) => (
+                      <Badge key={i} variant="secondary">
+                        {pin}
+                        <button type="button" onClick={() => handleRemovePincode(pin)}>
+                          <X className="h-3 w-3 ml-2" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="additionalCondition1">Additional Condition 1</Label>
-                <Input
-                  id="additionalCondition1"
-                  name="additionalCondition1"
-                  value={formData.additionalCondition1}
-                  onChange={handleChange}
-                />
+              {/* CONDITIONS SECTION */}
+              <div>
+                <Label className="text-lg font-medium">Additional Conditions</Label>
+
+                <Button type="button" className="mt-2" onClick={addCondition}>
+                  + Add Condition
+                </Button>
+
+                <div className="space-y-3 mt-3">
+                  {formData.conditions.map((item, index) => (
+                    <div key={index} className="grid grid-cols-3 gap-3 items-center">
+                      <Input
+                        placeholder="Key"
+                        value={item.key}
+                        onChange={(e) => updateCondition(index, "key", e.target.value)}
+                      />
+
+                      <Input
+                        placeholder="Value"
+                        value={item.value}
+                        onChange={(e) => updateCondition(index, "value", e.target.value)}
+                      />
+
+                      <Button variant="destructive" onClick={() => removeCondition(index)}>
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="additionalCondition2">Additional Condition 2</Label>
-                <Input
-                  id="additionalCondition2"
-                  name="additionalCondition2"
-                  value={formData.additionalCondition2}
-                  onChange={handleChange}
-                />
+              {/* UTM LINK */}
+              <div>
+                <Label>UTM Link</Label>
+                <Input name="utmLink" value={formData.utmLink} onChange={handleChange} required />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="additionalCondition3">Additional Condition 3</Label>
-                <Input
-                  id="additionalCondition3"
-                  name="additionalCondition3"
-                  value={formData.additionalCondition3}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="utmLink">UTM Link</Label>
-                <Input
-                  id="utmLink"
-                  name="utmLink"
-                  value={formData.utmLink}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                  required
-                />
-              </div>
-
-              <div className="flex gap-4 justify-end">
-                <Button type="button" variant="outline" onClick={onBack}>
+              {/* ACTIONS */}
+              <div className="flex justify-end gap-4">
+                <Button variant="outline" type="button" onClick={onBack} disabled={isLoading}>
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {editData ? 'Update' : 'Save'} UTM Link
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {editData ? "Updating..." : "Saving..."}
+                    </>
+                  ) : (
+                    `${editData ? "Update" : "Save"} UTM Link`
+                  )}
                 </Button>
               </div>
             </form>
@@ -391,38 +488,38 @@ const UTMForm = ({ onBack, onSave, editData }) => {
   );
 };
 
+
 // Main App Component
 export default function UtmLink() {
-  const [view, setView] = useState('table');
-  const [loans, setLoans] = useState(initialLoans);
-  const [editingLoan, setEditingLoan] = useState(null);
+  const queryClient = useQueryClient();
+  const [view, setView] = useState<'table' | 'form'>('table');
+  const [editingLoan, setEditingLoan] = useState<UtmLink | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => utmLinkApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['utm-links'] });
+      toast.success('UTM Link deleted successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete UTM Link');
+    },
+  });
 
   const handleNavigateToAdd = () => {
     setEditingLoan(null);
     setView('form');
   };
 
-  const handleEdit = (loan) => {
+  const handleEdit = (loan: UtmLink) => {
     setEditingLoan(loan);
     setView('form');
   };
 
-  const handleDelete = (id) => {
-    if (confirm('Are you sure you want to delete this UTM link?')) {
-      setLoans(prev => prev.filter(loan => loan.id !== id));
+  const handleDelete = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this UTM link?')) {
+      deleteMutation.mutate(id);
     }
-  };
-
-  const handleSave = (formData) => {
-    if (editingLoan) {
-      setLoans(prev => prev.map(loan => 
-        loan.id === editingLoan.id ? { ...formData, id: loan.id } : loan
-      ));
-    } else {
-      const newId = Math.max(...loans.map(l => l.id), 0) + 1;
-      setLoans(prev => [...prev, { ...formData, id: newId }]);
-    }
-    setView('table');
   };
 
   const handleBack = () => {
@@ -434,7 +531,6 @@ export default function UtmLink() {
     <div className="min-h-screen bg-gray-50">
       {view === 'table' ? (
         <LoanTable
-          loans={loans}
           onNavigateToAdd={handleNavigateToAdd}
           onEdit={handleEdit}
           onDelete={handleDelete}
@@ -442,7 +538,6 @@ export default function UtmLink() {
       ) : (
         <UTMForm
           onBack={handleBack}
-          onSave={handleSave}
           editData={editingLoan}
         />
       )}

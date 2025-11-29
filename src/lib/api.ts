@@ -17,6 +17,24 @@ export interface Testimonial {
   updatedAt?: string;
 }
 
+// ⭐ NEW: UTM Link Type
+export interface UtmLink {
+  _id?: string;
+  priority: number;
+  bankName: string;
+  loanAmountMin: string;
+  loanAmountMax: string;
+  salary: string;
+  ageMin: string;
+  ageMax: string;
+  pincodeType: "PAN INDIA" | "SHARED";
+  pincodes: string[];
+  conditions: Array<{ key: string; value: string }>;
+  utmLink: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // Types
 export interface EmploymentDetails {
   _id?: string;
@@ -263,6 +281,39 @@ async deleteTestimonial(id: string): Promise<ApiResponse<{ message: string }>> {
   });
 }
 
+  // ⭐ NEW: UTM Links API
+  async getAllUtmLinks(): Promise<ApiResponse<UtmLink[]>> {
+    return this.request<UtmLink[]>("/utm-links");
+  }
+
+  async getUtmLinkById(id: string): Promise<ApiResponse<UtmLink>> {
+    return this.request<UtmLink>(`/utm-links/${id}`);
+  }
+
+  async createUtmLink(
+    payload: Omit<UtmLink, "_id" | "createdAt" | "updatedAt">
+  ): Promise<ApiResponse<UtmLink>> {
+    return this.request<UtmLink>("/utm-links", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateUtmLink(
+    id: string,
+    payload: Partial<UtmLink>
+  ): Promise<ApiResponse<UtmLink>> {
+    return this.request<UtmLink>(`/utm-links/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteUtmLink(id: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/utm-links/${id}`, {
+      method: "DELETE",
+    });
+  }
 
   private async request<T>(
     endpoint: string,
@@ -834,6 +885,17 @@ export const testimonialApi = {
   update: (id: string, payload: Partial<Testimonial>) =>
     apiClient.updateTestimonial(id, payload),
   delete: (id: string) => apiClient.deleteTestimonial(id),
+};
+
+// ⭐ NEW: UTM Link API Exports
+export const utmLinkApi = {
+  getAll: () => apiClient.getAllUtmLinks(),
+  getById: (id: string) => apiClient.getUtmLinkById(id),
+  create: (payload: Omit<UtmLink, "_id" | "createdAt" | "updatedAt">) =>
+    apiClient.createUtmLink(payload),
+  update: (id: string, payload: Partial<UtmLink>) =>
+    apiClient.updateUtmLink(id, payload),
+  delete: (id: string) => apiClient.deleteUtmLink(id),
 };
 
 
