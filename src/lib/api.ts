@@ -55,6 +55,7 @@ export interface EmploymentDetails {
 }
 
 export interface Blog {
+  metaImage: string;
   _id?: string;
   title: string;
   slug: string;
