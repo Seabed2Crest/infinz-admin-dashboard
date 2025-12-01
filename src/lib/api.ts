@@ -17,6 +17,33 @@ export interface Testimonial {
   updatedAt?: string;
 }
 
+export interface FinancialDictionaryTerm {
+  _id?: string;
+  title: string;
+  slug?: string;
+  category: string;
+  description: string;
+  example?: string;
+  iconUrl: string;
+  iconKey?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface NewsPost {
+  _id?: string;
+  title: string;
+  slug?: string;
+  type: "news" | "press-release";
+  summary: string;
+  content: string;
+  imageUrl: string;
+  imageKey?: string;
+  publishedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // ⭐ NEW: UTM Link Type
 export interface UtmLink {
   _id?: string;
@@ -281,6 +308,43 @@ async deleteTestimonial(id: string): Promise<ApiResponse<{ message: string }>> {
     method: "DELETE",
   });
 }
+
+  async getAllFinancialTerms(): Promise<ApiResponse<FinancialDictionaryTerm[]>> {
+    return this.request<FinancialDictionaryTerm[]>("/financial-dictionary");
+  }
+
+  async getFinancialTermById(
+    id: string
+  ): Promise<ApiResponse<FinancialDictionaryTerm>> {
+    return this.request<FinancialDictionaryTerm>(`/financial-dictionary/${id}`);
+  }
+
+  async createFinancialTerm(
+    payload: Omit<FinancialDictionaryTerm, "_id" | "slug" | "createdAt" | "updatedAt">
+  ): Promise<ApiResponse<FinancialDictionaryTerm>> {
+    return this.request<FinancialDictionaryTerm>("/financial-dictionary", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateFinancialTerm(
+    id: string,
+    payload: Partial<FinancialDictionaryTerm>
+  ): Promise<ApiResponse<FinancialDictionaryTerm>> {
+    return this.request<FinancialDictionaryTerm>(`/financial-dictionary/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteFinancialTerm(
+    id: string
+  ): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/financial-dictionary/${id}`, {
+      method: "DELETE",
+    });
+  }
 
   // ⭐ NEW: UTM Links API
   async getAllUtmLinks(): Promise<ApiResponse<UtmLink[]>> {
@@ -675,6 +739,50 @@ async deleteTestimonial(id: string): Promise<ApiResponse<{ message: string }>> {
     return this.request<Blog[]>("/blogs");
   }
 
+  async getAllNews(
+    params?: { search?: string; type?: "news" | "press-release" }
+  ): Promise<ApiResponse<NewsPost[]>> {
+    const query = new URLSearchParams(
+      Object.entries(params || {}).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== "") acc[key] = String(value);
+        return acc;
+      }, {} as Record<string, string>)
+    ).toString();
+
+    return this.request<NewsPost[]>(`/news${query ? `?${query}` : ""}`);
+  }
+
+  async getNewsById(id: string): Promise<ApiResponse<NewsPost>> {
+    return this.request<NewsPost>(`/news/${id}`);
+  }
+
+  async createNews(
+    payload: Omit<NewsPost, "_id" | "slug" | "createdAt" | "updatedAt">
+  ): Promise<ApiResponse<NewsPost>> {
+    return this.request<NewsPost>("/news", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateNews(
+    id: string,
+    payload: Partial<NewsPost>
+  ): Promise<ApiResponse<NewsPost>> {
+    return this.request<NewsPost>(`/news/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteNews(
+    id: string
+  ): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>(`/news/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   async getBlogById(id: string): Promise<ApiResponse<Blog>> {
     return this.request<Blog>(`/blogs/${id}`);
   }
@@ -848,8 +956,29 @@ export const blogApi = {
   delete: (id: string) => apiClient.deleteBlog(id),
 };
 
+export const newsApi = {
+  getAll: (params?: { search?: string; type?: "news" | "press-release" }) =>
+    apiClient.getAllNews(params),
+  getById: (id: string) => apiClient.getNewsById(id),
+  create: (
+    payload: Omit<NewsPost, "_id" | "slug" | "createdAt" | "updatedAt">
+  ) => apiClient.createNews(payload),
+  update: (id: string, data: Partial<NewsPost>) =>
+    apiClient.updateNews(id, data),
+  delete: (id: string) => apiClient.deleteNews(id),
+};
+
+type UploadType =
+  | "blogs"
+  | "testimonials"
+  | "financial-dictionary"
+  | "employee-salary-slip"
+  | "news"
+  | "news-press"
+  | "news-and-press";
+
 export const fileApi = {
-  getPresigned: async (file: File) => {
+  getPresigned: async (file: File, uploadType: UploadType = "blogs") => {
     const res = await fetch(`${API_BASE_URL}/presigned-url`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -860,7 +989,7 @@ export const fileApi = {
             fileType: file.type,
           },
         ],
-        uploadType: "blogs",
+        uploadType,
       }),
     });
 
@@ -886,6 +1015,17 @@ export const testimonialApi = {
   update: (id: string, payload: Partial<Testimonial>) =>
     apiClient.updateTestimonial(id, payload),
   delete: (id: string) => apiClient.deleteTestimonial(id),
+};
+
+export const financialDictionaryApi = {
+  getAll: () => apiClient.getAllFinancialTerms(),
+  getById: (id: string) => apiClient.getFinancialTermById(id),
+  create: (
+    payload: Omit<FinancialDictionaryTerm, "_id" | "slug" | "createdAt" | "updatedAt">
+  ) => apiClient.createFinancialTerm(payload),
+  update: (id: string, payload: Partial<FinancialDictionaryTerm>) =>
+    apiClient.updateFinancialTerm(id, payload),
+  delete: (id: string) => apiClient.deleteFinancialTerm(id),
 };
 
 // ⭐ NEW: UTM Link API Exports

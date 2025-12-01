@@ -1,142 +1,227 @@
-import React, { useState, ChangeEvent } from 'react';
-import { Plus, Edit2, Trash2, ArrowLeft, Upload, Search } from 'lucide-react';
-
-interface Term {
-  id: number;
-  icon: string;
-  title: string;
-  category: string;
-  description: string;
-  example: string;
-}
+import React, { useState, ChangeEvent } from "react";
+import { Plus, Edit2, Trash2, ArrowLeft, Upload, Search } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  financialDictionaryApi,
+  fileApi,
+  FinancialDictionaryTerm,
+} from "@/lib/api";
 
 interface FormData {
-  icon: string;
+  iconUrl: string;
+  iconKey?: string;
   title: string;
   category: string;
   description: string;
   example: string;
 }
 
-type ViewType = 'list' | 'add' | 'edit';
+type ViewType = "list" | "add" | "edit";
 
 const FinancialDictionaryAdmin: React.FC = () => {
-  const [terms, setTerms] = useState<Term[]>([]);
-  const [currentView, setCurrentView] = useState<ViewType>('list');
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const queryClient = useQueryClient();
+  const [currentView, setCurrentView] = useState<ViewType>("list");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [uploading, setUploading] = useState(false);
+  const [iconPreview, setIconPreview] = useState<string>("");
   const [formData, setFormData] = useState<FormData>({
-    icon: '',
-    title: '',
-    category: '',
-    description: '',
-    example: ''
+    iconUrl: "",
+    iconKey: "",
+    title: "",
+    category: "",
+    description: "",
+    example: "",
   });
-  const [iconPreview, setIconPreview] = useState<string>('');
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const termsQuery = useQuery({
+    queryKey: ["financial-dictionary"],
+    queryFn: async () => {
+      const res = await financialDictionaryApi.getAll();
+      return res.data ?? [];
+    },
+  });
+
+  const terms = termsQuery.data ?? [];
+
+  const createMutation = useMutation({
+    mutationFn: financialDictionaryApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["financial-dictionary"] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: {
+      id: string;
+      data: Partial<FinancialDictionaryTerm>;
+    }) => financialDictionaryApi.update(payload.id, payload.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["financial-dictionary"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => financialDictionaryApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["financial-dictionary"] });
+    },
+  });
+
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
-  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setIconPreview(result);
-        setFormData({
-          ...formData,
-          icon: result
-        });
-      };
-      reader.readAsDataURL(file);
+      try {
+        setUploading(true);
+        const presigned = await fileApi.getPresigned(
+          file,
+          "financial-dictionary"
+        );
+        const uploadData = Array.isArray(presigned.data)
+          ? presigned.data[0]
+          : presigned.data;
+        await fileApi.uploadToS3(uploadData.url, file);
+        const url = `https://infinz.s3.ap-south-1.amazonaws.com/${uploadData.key}`;
+        setIconPreview(url);
+        setFormData((prev) => ({
+          ...prev,
+          iconUrl: url,
+          iconKey: uploadData.key,
+        }));
+      } catch {
+        alert("Failed to upload icon. Please try again.");
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
   const handleAdd = () => {
-    setCurrentView('add');
-    setIconPreview('');
+    setCurrentView("add");
+    setIconPreview("");
     setFormData({
-      icon: '',
-      title: '',
-      category: '',
-      description: '',
-      example: ''
+      iconUrl: "",
+      iconKey: "",
+      title: "",
+      category: "",
+      description: "",
+      example: "",
     });
   };
 
-  const handleEdit = (term: Term) => {
-    setCurrentView('edit');
-    setEditingId(term.id);
-    setIconPreview(term.icon);
+  const handleEdit = (term: FinancialDictionaryTerm) => {
+    setCurrentView("edit");
+    setEditingId(term._id || null);
+    setIconPreview(term.iconUrl);
     setFormData({
-      icon: term.icon,
+      iconUrl: term.iconUrl,
+      iconKey: term.iconKey,
       title: term.title,
       category: term.category,
       description: term.description,
-      example: term.example
+      example: term.example || "",
     });
   };
 
-  const handleSave = () => {
-    if (currentView === 'add') {
-      const newTerm: Term = {
-        ...formData,
-        id: terms.length > 0 ? Math.max(...terms.map(t => t.id)) + 1 : 1
-      };
-      setTerms([...terms, newTerm]);
-    } else if (currentView === 'edit' && editingId !== null) {
-      setTerms(terms.map(term => 
-        term.id === editingId ? { ...term, ...formData } : term
-      ));
+  const handleSave = async () => {
+    if (!formData.title || !formData.category || !formData.description || !formData.iconUrl) {
+      alert("Please fill all required fields");
+      return;
     }
-    setCurrentView('list');
-    setEditingId(null);
-    setFormData({
-      icon: '',
-      title: '',
-      category: '',
-      description: '',
-      example: ''
-    });
-    setIconPreview('');
+
+    const payload = {
+      title: formData.title,
+      category: formData.category,
+      description: formData.description,
+      example: formData.example,
+      iconUrl: formData.iconUrl,
+      iconKey: formData.iconKey,
+    };
+
+    try {
+      if (currentView === "add") {
+        await createMutation.mutateAsync(payload);
+      } else if (currentView === "edit" && editingId) {
+        await updateMutation.mutateAsync({ id: editingId, data: payload });
+      }
+      setCurrentView("list");
+      setEditingId(null);
+      setFormData({
+        iconUrl: "",
+        iconKey: "",
+        title: "",
+        category: "",
+        description: "",
+        example: "",
+      });
+      setIconPreview("");
+    } catch (error: any) {
+      alert(error?.message || "Failed to save term");
+    }
   };
 
   const handleCancel = () => {
-    setCurrentView('list');
+    setCurrentView("list");
     setEditingId(null);
-    setIconPreview('');
+    setIconPreview("");
     setFormData({
-      icon: '',
-      title: '',
-      category: '',
-      description: '',
-      example: ''
+      iconUrl: "",
+      iconKey: "",
+      title: "",
+      category: "",
+      description: "",
+      example: "",
     });
   };
 
-  const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this term?')) {
-      setTerms(terms.filter(term => term.id !== id));
+  const handleDelete = async (id?: string) => {
+    if (!id) return;
+    if (window.confirm("Are you sure you want to delete this term?")) {
+      try {
+        await deleteMutation.mutateAsync(id);
+      } catch (error: any) {
+        alert(error?.message || "Failed to delete term");
+      }
     }
   };
 
   const isFormValid = (): boolean => {
-    return !!(formData.title && formData.category && formData.description && formData.icon);
+    return !!(
+      formData.title &&
+      formData.category &&
+      formData.description &&
+      formData.iconUrl
+    );
   };
 
-  const filteredTerms = terms.filter(term =>
-    term.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    term.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    term.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTerms = terms.filter((term) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      term.title.toLowerCase().includes(query) ||
+      term.category.toLowerCase().includes(query) ||
+      term.description.toLowerCase().includes(query)
+    );
+  });
+
+  if (currentView === "list" && termsQuery.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">Loading financial terms...</p>
+      </div>
+    );
+  }
 
   // List View
-  if (currentView === 'list') {
+  if (currentView === "list") {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
         <div className="max-w-7xl mx-auto">
@@ -225,10 +310,14 @@ const FinancialDictionaryAdmin: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredTerms.map(term => (
-                  <tr key={term.id} className="hover:bg-gray-50 transition-colors">
+                {filteredTerms.map((term) => (
+                  <tr key={term._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
-                      <img src={term.icon} alt={term.title} className="w-12 h-12 rounded-lg object-cover border border-gray-200" />
+                      <img
+                        src={term.iconUrl}
+                        alt={term.title}
+                        className="w-12 h-12 rounded-lg object-cover border border-gray-200"
+                      />
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-semibold text-gray-900">{term.title}</div>
@@ -251,7 +340,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
                           <Edit2 size={18} />
                         </button>
                         <button
-                          onClick={() => handleDelete(term.id)}
+                          onClick={() => handleDelete(term._id)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete"
                         >
@@ -280,7 +369,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
   // Add/Edit View (Separate Page)
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto">
         {/* Header with Back Button */}
         <div className="mb-8">
           <button
@@ -291,10 +380,12 @@ const FinancialDictionaryAdmin: React.FC = () => {
             Back to List
           </button>
           <h1 className="text-3xl font-bold text-gray-900">
-            {currentView === 'add' ? 'Add New Term' : 'Edit Term'}
+            {currentView === "add" ? "Add New Term" : "Edit Term"}
           </h1>
           <p className="text-gray-600 mt-1">
-            {currentView === 'add' ? 'Fill in the details to create a new dictionary term' : 'Update the term information below'}
+            {currentView === "add"
+              ? "Fill in the details to create a new dictionary term"
+              : "Update the term information below"}
           </p>
         </div>
 
@@ -309,7 +400,11 @@ const FinancialDictionaryAdmin: React.FC = () => {
               <div className="flex items-start gap-6">
                 <div className="flex-shrink-0">
                   {iconPreview ? (
-                    <img src={iconPreview} alt="Preview" className="w-32 h-32 rounded-xl object-cover border-2 border-gray-200 shadow-sm" />
+                    <img
+                      src={iconPreview}
+                      alt="Preview"
+                      className="w-32 h-32 rounded-xl object-cover border-2 border-gray-200 shadow-sm"
+                    />
                   ) : (
                     <div className="w-32 h-32 rounded-xl bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">
                       <Upload className="text-gray-400" size={40} />
@@ -329,7 +424,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
                     className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-3 rounded-lg cursor-pointer transition-colors font-medium shadow-md hover:shadow-lg"
                   >
                     <Upload size={18} />
-                    {iconPreview ? 'Change Image' : 'Upload Image'}
+                    {iconPreview ? "Change Image" : "Upload Image"}
                   </label>
                   <p className="text-sm text-gray-500 mt-3">PNG, JPG, SVG up to 5MB</p>
                   <p className="text-xs text-gray-400 mt-1">Recommended size: 512x512px</p>
@@ -411,7 +506,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
               disabled={!isFormValid()}
               className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-medium"
             >
-              {currentView === 'add' ? 'Create Term' : 'Update Term'}
+              {currentView === "add" ? "Create Term" : "Update Term"}
             </button>
           </div>
         </div>
