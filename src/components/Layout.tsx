@@ -29,9 +29,9 @@ import {
 } from "@/components/ui/sidebar";
 
 // ----------------------
-// MENU CONFIGURATION
+// MENU CONFIG
 // ----------------------
-const menuItems = [
+const mainMenu = [
   {
     icon: BarChart3,
     label: "Dashboard",
@@ -62,35 +62,36 @@ const menuItems = [
   },
 ] as const;
 
+const cmsMenu = [
+  { label: "Blogs", path: "/admin/blogs" },
+  { label: "Testimonials", path: "/admin/testimonials" },
+  { label: "UTM Links", path: "/admin/utm-links" },
+  { label: "Financial Dictionary", path: "/admin/financial-dictionary" },
+  { label: "News & Press", path: "/admin/news" },
+];
+
 // ----------------------
 // PERMISSION CHECKER
 // ----------------------
 function hasPermission(module: string, action: string): boolean {
   try {
     const accessLevel = localStorage.getItem("adminAccessLevel");
-
     if (accessLevel === "god_level") return true;
 
     const raw = localStorage.getItem("adminPermissions");
     if (!raw) return false;
 
-    const perms = JSON.parse(raw) as {
-      module: string;
-      actions: string[];
-    }[];
-
-    const found = perms.find((p) => p.module === module);
-    if (!found) return false;
-
-    return found.actions.includes(action);
-  } catch (error) {
-    console.error("Permission check error:", error);
+    const perms = JSON.parse(raw) as { module: string; actions: string[] }[];
+    const found = perms.find(p => p.module === module);
+    return !!found && found.actions.includes(action);
+  } catch (err) {
+    console.error("Permission error:", err);
     return false;
   }
 }
 
 // ----------------------
-// SIDEBAR COMPONENT
+// SIDEBAR
 // ----------------------
 const AppSidebar = () => {
   const navigate = useNavigate();
@@ -98,42 +99,34 @@ const AppSidebar = () => {
   const { state } = useSidebar();
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminPermissions");
-    localStorage.removeItem("adminAccessLevel");
+    localStorage.clear();
     navigate("/login");
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => location.pathname.startsWith(path);
 
   return (
     <Sidebar className="border-r">
       {/* HEADER */}
       <SidebarHeader className="border-b p-4 h-16 flex items-center">
-        <div className="flex items-center space-x-2">
-          <img src={infinzLogo} alt="INFINZ Logo" className="h-8 w-auto" />
-        </div>
+        <img src={infinzLogo} alt="Logo" className="h-8" />
       </SidebarHeader>
 
-      {/* SIDEBAR MENU */}
       <SidebarContent className="px-2 py-4">
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Navigation
-          </SidebarGroupLabel>
 
+        {/* MAIN MENU */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Main</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {/* Main Items */}
-              {menuItems
-                .filter((item) => hasPermission(item.module, item.action))
-                .map((item) => (
+            <SidebarMenu>
+              {mainMenu
+                .filter(i => hasPermission(i.module, i.action))
+                .map(item => (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       asChild
-                      isActive={isActive(item.path)}
                       tooltip={state === "collapsed" ? item.label : undefined}
-                      className="w-full justify-start"
+                      isActive={isActive(item.path)}
                     >
                       <NavLink
                         to={item.path}
@@ -141,114 +134,60 @@ const AppSidebar = () => {
                           `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
                             isActive
                               ? "bg-accent text-accent-foreground"
-                              : "hover:bg-accent hover:text-accent-foreground"
+                              : "hover:bg-accent"
                           }`
                         }
                       >
                         <item.icon className="h-4 w-4" />
-                        <span className="text-sm font-medium">
-                          {item.label}
-                        </span>
+                        <span className="text-sm">{item.label}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-
-              {/* ------------------------------ */}
-              {/* BLOGS                         */}
-              {/* ------------------------------ */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location.pathname.startsWith("/admin/blogs")}
-                  tooltip={state === "collapsed" ? "Blogs" : undefined}
-                  className="w-full justify-start"
-                >
-                  <NavLink
-                    to="/admin/blogs"
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
-                        isActive
-                          ? "bg-accent text-accent-foreground"
-                          : "hover:bg-accent hover:text-accent-foreground"
-                      }`
-                    }
-                  >
-                    <ReceiptText className="h-4 w-4" />
-                    <span className="text-sm font-medium">Blogs</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* ------------------------------ */}
-              {/* TESTIMONIALS                   */}
-              {/* ------------------------------ */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location.pathname.startsWith("/admin/testimonials")}
-                  tooltip={state === "collapsed" ? "Testimonials" : undefined}
-                  className="w-full justify-start"
-                >
-                  <NavLink
-                    to="/admin/testimonials"
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
-                        isActive
-                          ? "bg-accent text-accent-foreground"
-                          : "hover:bg-accent hover:text-accent-foreground"
-                      }`
-                    }
-                  >
-                    <ReceiptText className="h-4 w-4" />
-                    <span className="text-sm font-medium">Testimonials</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location.pathname.startsWith("/admin/testimonials")}
-                  tooltip={state === "collapsed" ? "Testimonials" : undefined}
-                  className="w-full justify-start"
-                >
-                  <NavLink
-                    to="/admin/utm-links"
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
-                        isActive
-                          ? "bg-accent text-accent-foreground"
-                          : "hover:bg-accent hover:text-accent-foreground"
-                      }`
-                    }
-                  >
-                    <ReceiptText className="h-4 w-4" />
-                    <span className="text-sm font-medium">UTM Links</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* FOOTER MENU */}
+        {/* CMS MENU */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Content Management</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {cmsMenu.map(item => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip={state === "collapsed" ? item.label : undefined}
+                    isActive={isActive(item.path)}
+                  >
+                    <NavLink
+                      to={item.path}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
+                          isActive
+                            ? "bg-accent text-accent-foreground"
+                            : "hover:bg-accent"
+                        }`
+                      }
+                    >
+                      <ReceiptText className="h-4 w-4" />
+                      <span className="text-sm">{item.label}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* FOOTER */}
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
+            <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip={
-                    state === "collapsed" ? "Change Password" : undefined
-                  }
-                  className="w-full justify-start"
-                >
-                  <NavLink
-                    to="/reset-password"
-                    className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-                  >
-                    <Key className="h-4 w-4" />
-                    <span className="text-sm font-medium">Change Password</span>
+                <SidebarMenuButton asChild tooltip={state === "collapsed" ? "Change Password" : undefined}>
+                  <NavLink to="/reset-password" className="flex items-center gap-3 px-2 py-2 hover:bg-accent rounded-md">
+                    <Key className="h-4 w-4" /> Change Password
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -257,15 +196,15 @@ const AppSidebar = () => {
                 <SidebarMenuButton
                   onClick={handleLogout}
                   tooltip={state === "collapsed" ? "Logout" : undefined}
-                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="text-red-600 hover:bg-red-50"
                 >
-                  <LogOut className="h-4 w-4" />
-                  <span className="text-sm font-medium">Logout</span>
+                  <LogOut className="h-4 w-4" /> Logout
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
       </SidebarContent>
     </Sidebar>
   );
@@ -287,21 +226,20 @@ const Layout = () => {
         <AppSidebar />
 
         <SidebarInset className="flex flex-col w-full">
-          <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-6 py-4 h-16 flex items-center">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger />
-              </div>
-              <div className="flex items-center space-x-4">
-                <Avatar>
-                  <AvatarImage src="/placeholder-avatar.jpg" />
-                  <AvatarFallback>AD</AvatarFallback>
-                </Avatar>
-              </div>
-            </div>
+          <header className="sticky top-0 z-40 h-16 px-6 border-b bg-background/95 backdrop-blur flex items-center justify-between">
+            <SidebarTrigger />
+
+            <h2 className="text-sm font-semibold capitalize">
+              {location.pathname.replace("/admin/", "").replace("-", " ") || "Dashboard"}
+            </h2>
+
+            <Avatar>
+              <AvatarImage src="/placeholder-avatar.jpg" />
+              <AvatarFallback>AD</AvatarFallback>
+            </Avatar>
           </header>
 
-          <main className="flex-1 px-6 py-6">
+          <main className="flex-1 p-6">
             <Outlet />
           </main>
         </SidebarInset>
