@@ -42,25 +42,43 @@ export interface NewsPost {
   publishedAt: string;
   createdAt?: string;
   updatedAt?: string;
+// ⭐ UPDATED: UTM Link Type
 }
-
-// ⭐ NEW: UTM Link Type
-export interface UtmLink {
+ export interface UtmLink {
   _id?: string;
+
+  // Sorting Priority
   priority: number;
+
+  // Bank Info
   bankName: string;
+
+  // Loan Details
   loanAmountMin: string;
   loanAmountMax: string;
   salary: string;
   ageMin: string;
   ageMax: string;
+
+  // Pincode Logic
   pincodeType: "PAN INDIA" | "SHARED";
   pincodes: string[];
+
+  // Extra Conditions
   conditions: Array<{ key: string; value: string }>;
+
+  // UTM URL
   utmLink: string;
+
+  // ⭐ Bank Branding
+  logoImage?: string;     // S3 key only (not full URL)
+  logoAlt?: string;       // SEO / Accessibility
+
+  // System Fields
   createdAt?: string;
   updatedAt?: string;
 }
+
 
 // Types
 export interface EmploymentDetails {

@@ -94,6 +94,7 @@ export const ExportModal = ({ isOpen, onClose, filters }: ExportModalProps) => {
             <div className="relative">
               <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
+                disabled
                 type="date"
                 className="pl-9"
                 value={fromDate}
@@ -107,6 +108,7 @@ export const ExportModal = ({ isOpen, onClose, filters }: ExportModalProps) => {
             <div className="relative">
               <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
+                disabled
                 type="date"
                 className="pl-9"
                 min={fromDate}

@@ -166,7 +166,7 @@ export default function BlogForm() {
           </div>
 
           <div>
-            <Label>Keywords</Label>
+            <Label>Additional Scripts</Label>
             <Input
               {...register("keywords")}
               placeholder="finance, business, money"

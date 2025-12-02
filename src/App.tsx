@@ -27,10 +27,10 @@ import DownloadLogsPage from "./pages/Logs";
 import BlogList from "./pages/BlogList";
 import BlogForm from "./pages/BlogForm";
 import TestimonialsList from "./pages/TestimonialsList";
-import AddTestimonial from "./pages/AddTestimonial";
 import UtmLink from "./pages/LoanTable";
 import FinancialDictionaryAdmin from "./pages/financial-dictionary";
 import NewsAdmin from "./pages/NewsAdmin";
+import AddEditTestimonial from "./pages/AddTestimonial";
 
 const queryClient = new QueryClient();
 
@@ -163,10 +163,11 @@ const App = () => (
 
             {/* BLOG ROUTES (FIXED) */}
             <Route path="admin/blogs" element={<BlogList />} />
+            <Route path="admin/testimonials/add" element={<AddEditTestimonial />} />
+            <Route path="admin/testimonials/edit/:id" element={<AddEditTestimonial />} />
+            <Route path="admin/testimonials" element={<TestimonialsList />} />
             <Route path="admin/blogs/add" element={<BlogForm />} />
             <Route path="admin/blogs/edit/:id" element={<BlogForm />} />
-            <Route path="admin/testimonials" element={<TestimonialsList />} />
-            <Route path="admin/testimonials/add" element={<AddTestimonial />} />
             <Route path="admin/financial-dictionary" element={<FinancialDictionaryAdmin />} />
             <Route path="admin/news" element={<NewsAdmin />} />
             <Route

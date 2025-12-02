@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";   // ⭐ ADD THIS
+import { useEffect, useState } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { testimonialApi } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,9 +14,19 @@ import {
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 
-export default function AddTestimonial() {
+type Category = "business" | "home" | "personal";
+
+
+export default function AddEditTestimonial() {
   const { toast } = useToast();
-  const navigate = useNavigate();   // ⭐ ADD THIS
+  const navigate = useNavigate();
+  const { id } = useParams();               // ✅ used for edit mode
+  const location = useLocation();
+  const isEditMode = location.pathname.includes("edit");
+
+  const [loading, setLoading] = useState(false);
+  const [imageKey, setImageKey] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
 
   const [form, setForm] = useState({
     name: "",
@@ -26,14 +36,51 @@ export default function AddTestimonial() {
     savedAmount: "",
     savedType: "",
     testimonial: "",
-    category: "" as "" | "business" | "home" | "personal",
+    category: "" as Category,
   });
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageKey, setImageKey] = useState("");
-  const [loading, setLoading] = useState(false);
+  // ---------------------------
+  // FETCH DATA FOR EDIT MODE
+  // ---------------------------
+  useEffect(() => {
+    if (isEditMode && id) {
+      fetchTestimonial();
+    }
+  }, [id]);
 
-  // AUTO UPLOAD FILE
+  const fetchTestimonial = async () => {
+    try {
+      setLoading(true);
+      const res = await testimonialApi.getById(id!);
+      const data = res.data;
+
+      setForm({
+        name: data.name,
+        role: data.role,
+        location: data.location,
+        rating: data.rating,
+        savedAmount: String(data.savedAmount),
+        savedType: data.savedType,
+        testimonial: data.testimonial,
+        category: data.category,
+      });
+
+      setImageKey(data.image);
+      setPreviewUrl(`https://infinz.s3.amazonaws.com/${data.image}`);
+
+    } catch (err) {
+      toast({
+        title: "Failed to load testimonial",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------------------------
+  // IMAGE UPLOAD
+  // ---------------------------
   const handleFileSelect = async (file: File) => {
     try {
       setLoading(true);
@@ -44,11 +91,14 @@ export default function AddTestimonial() {
         uploadType: "testimonials",
       };
 
-      const presignRes = await fetch("https://backend.infinz.seabed2crest.com/api/v1/presigned-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const presignRes = await fetch(
+        "https://backend.infinz.seabed2crest.com/api/v1/presigned-url",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
       const json = await presignRes.json();
       const { url, key } = json.data[0];
@@ -60,16 +110,16 @@ export default function AddTestimonial() {
       });
 
       setImageKey(key);
+      setPreviewUrl(`https://infinz.s3.amazonaws.com/${key}`);
 
       toast({
-        title: "Image Uploaded ✔",
-        description: "Your image has been successfully uploaded.",
+        title: "Image Uploaded",
+        description: "Upload completed",
       });
+
     } catch (error) {
-      console.error(error);
       toast({
         title: "Upload Failed",
-        description: "Could not upload image.",
         variant: "destructive",
       });
     } finally {
@@ -77,62 +127,48 @@ export default function AddTestimonial() {
     }
   };
 
-  // SUBMIT FORM
+  // ---------------------------
+  // SUBMIT HANDLER
+  // ---------------------------
   const handleSubmit = async () => {
-    if (!imageKey)
+    if (!form.name || !form.testimonial || !form.category) {
+      return toast({
+        title: "Missing Fields",
+        description: "Please fill all required fields",
+        variant: "destructive",
+      });
+    }
+
+    if (!imageKey) {
       return toast({
         title: "Image Required",
-        description: "Please upload an image.",
+        description: "Please upload an image",
         variant: "destructive",
       });
+    }
 
-    if (!form.category)
-      return toast({
-        title: "Select Category",
-        description: "Please choose a category.",
-        variant: "destructive",
-      });
+    const payload = {
+      ...form,
+      rating: Number(form.rating),
+      savedAmount: Number(form.savedAmount),
+      image: imageKey,
+    };
 
     try {
       setLoading(true);
 
-      const payload = {
-        name: form.name,
-        role: form.role,
-        location: form.location,
-        rating: Number(form.rating),
-        savedAmount: Number(form.savedAmount),
-        savedType: form.savedType,
-        testimonial: form.testimonial,
-        category: form.category,
-        image: imageKey,
-      };
+      if (isEditMode && id) {
+        await testimonialApi.update(id, payload);
+        toast({ title: "Testimonial updated" });
+      } else {
+        await testimonialApi.create(payload);
+        toast({ title: "Testimonial created" });
+      }
 
-      await testimonialApi.create(payload);
-
-      toast({
-        title: "Success",
-        description: "Testimonial added successfully!",
-      });
-
-      // Reset form
-      setForm({
-        name: "",
-        role: "",
-        location: "",
-        rating: 5,
-        savedAmount: "",
-        savedType: "",
-        testimonial: "",
-        category: "",
-      });
-      setImageKey("");
-      setImageFile(null);
+      navigate("/admin/testimonials");
     } catch (err) {
-      console.error(err);
       toast({
-        title: "Error",
-        description: "Failed to add testimonial.",
+        title: "Save failed",
         variant: "destructive",
       });
     } finally {
@@ -143,43 +179,40 @@ export default function AddTestimonial() {
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6 border rounded-lg mt-6">
 
-      {/* 🔙 BACK BUTTON */}
       <Button variant="outline" onClick={() => navigate("/admin/testimonials")}>
         ← Back
       </Button>
 
-      <h2 className="text-2xl font-bold">Add Testimonial</h2>
+      <h2 className="text-2xl font-bold">
+        {isEditMode ? "Edit Testimonial" : "Add Testimonial"}
+      </h2>
 
       {/* NAME */}
-      <div className="space-y-2">
-        <Label>Name</Label>
+      <Field label="Name">
         <Input
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
         />
-      </div>
+      </Field>
 
       {/* ROLE */}
-      <div className="space-y-2">
-        <Label>Role</Label>
+      <Field label="Role">
         <Input
           value={form.role}
           onChange={(e) => setForm({ ...form, role: e.target.value })}
         />
-      </div>
+      </Field>
 
       {/* LOCATION */}
-      <div className="space-y-2">
-        <Label>Location</Label>
+      <Field label="Location">
         <Input
           value={form.location}
           onChange={(e) => setForm({ ...form, location: e.target.value })}
         />
-      </div>
+      </Field>
 
       {/* RATING */}
-      <div className="space-y-2">
-        <Label>Rating (1–5)</Label>
+      <Field label="Rating (1-5)">
         <Input
           type="number"
           min="1"
@@ -187,55 +220,43 @@ export default function AddTestimonial() {
           value={form.rating}
           onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })}
         />
-      </div>
+      </Field>
 
       {/* SAVED AMOUNT */}
-      <div className="space-y-2">
-        <Label>Saved Amount</Label>
+      <Field label="Saved Amount">
         <Input
           type="number"
           value={form.savedAmount}
-          onChange={(e) =>
-            setForm({ ...form, savedAmount: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, savedAmount: e.target.value })}
         />
-      </div>
+      </Field>
 
       {/* SAVED TYPE */}
-      <div className="space-y-2">
-        <Label>Saved Type</Label>
+      <Field label="Saved Type">
         <Input
-          placeholder="Saved on Business Loan"
           value={form.savedType}
-          onChange={(e) =>
-            setForm({ ...form, savedType: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, savedType: e.target.value })}
         />
-      </div>
+      </Field>
 
       {/* TESTIMONIAL */}
-      <div className="space-y-2">
-        <Label>Testimonial</Label>
+      <Field label="Testimonial">
         <Textarea
-          rows={4}
           value={form.testimonial}
-          onChange={(e) =>
-            setForm({ ...form, testimonial: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, testimonial: e.target.value })}
         />
-      </div>
+      </Field>
 
       {/* CATEGORY */}
-      <div className="space-y-2">
-        <Label>Category</Label>
+      <Field label="Category">
         <Select
           value={form.category}
-          onValueChange={(value) =>
-            setForm({ ...form, category: value as "business" | "home" | "personal" })
+          onValueChange={(value: Category) =>
+            setForm({ ...form, category: value })
           }
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select a category" />
+            <SelectValue placeholder="Select" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="business">Business</SelectItem>
@@ -243,32 +264,37 @@ export default function AddTestimonial() {
             <SelectItem value="personal">Personal</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </Field>
 
-      {/* IMAGE UPLOAD */}
-      <div className="space-y-2">
-        <Label>Image</Label>
+      {/* IMAGE */}
+      <Field label="Image">
         <Input
           type="file"
           accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              setImageFile(file);
-              handleFileSelect(file);
-            }
-          }}
+          onChange={(e) =>
+            e.target.files && handleFileSelect(e.target.files[0])
+          }
         />
-
-        {imageKey && (
-          <p className="text-sm text-green-600">Image uploaded ✔</p>
+        {previewUrl && (
+          <img
+            src={previewUrl}
+            alt="Preview"
+            className="w-32 h-32 rounded-full mt-3 object-cover"
+          />
         )}
-      </div>
+      </Field>
 
-      {/* SUBMIT */}
       <Button className="w-full" onClick={handleSubmit} disabled={loading}>
-        {loading ? "Saving..." : "Add Testimonial"}
+        {loading ? "Saving..." : isEditMode ? "Update" : "Create"}
       </Button>
     </div>
   );
 }
+
+// Small helper wrapper
+const Field = ({ label, children }: any) => (
+  <div className="space-y-2">
+    <Label>{label}</Label>
+    {children}
+  </div>
+);

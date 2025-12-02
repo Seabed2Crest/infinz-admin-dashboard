@@ -15,7 +15,7 @@ interface Testimonial {
   savedType: string;
   testimonial: string;
   category: string;
-  image: string; 
+  image: string;
 }
 
 export default function TestimonialsList() {
@@ -106,6 +106,12 @@ export default function TestimonialsList() {
                 <p className="text-sm text-gray-700">
                   {item.testimonial.substring(0, 120)}...
                 </p>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/admin/testimonials/edit/${item._id}`)}
+                >
+                  Edit
+                </Button>
 
                 <Button
                   variant="destructive"

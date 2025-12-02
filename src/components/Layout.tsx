@@ -40,6 +40,10 @@ const mainMenu = [
     action: "view",
   },
   {
+    label: "UTM Links", path: "/admin/utm-links", module: "utm-links", icon: ReceiptText,
+    action: "view",
+  },
+  {
     icon: Users,
     label: "Leads",
     path: "/leads",
@@ -63,12 +67,12 @@ const mainMenu = [
 ] as const;
 
 const cmsMenu = [
-  { label: "Blogs", path: "/admin/blogs" },
-  { label: "Testimonials", path: "/admin/testimonials" },
-  { label: "UTM Links", path: "/admin/utm-links" },
-  { label: "Financial Dictionary", path: "/admin/financial-dictionary" },
-  { label: "News & Press", path: "/admin/news" },
+  { label: "Blogs", path: "/admin/blogs", module: "blogs", action: "view" },
+  { label: "Testimonials", path: "/admin/testimonials", module: "testimonials", action: "view" },
+  { label: "Financial Dictionary", path: "/admin/financial-dictionary", module: "financial-dictionary", action: "view" },
+  { label: "News & Press", path: "/admin/news", module: "news", action: "view" },
 ];
+
 
 // ----------------------
 // PERMISSION CHECKER
@@ -131,10 +135,9 @@ const AppSidebar = () => {
                       <NavLink
                         to={item.path}
                         className={({ isActive }) =>
-                          `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
-                            isActive
-                              ? "bg-accent text-accent-foreground"
-                              : "hover:bg-accent"
+                          `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${isActive
+                            ? "bg-accent text-accent-foreground"
+                            : "hover:bg-accent"
                           }`
                         }
                       >
@@ -153,29 +156,30 @@ const AppSidebar = () => {
           <SidebarGroupLabel>Content Management</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {cmsMenu.map(item => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton
-                    asChild
-                    tooltip={state === "collapsed" ? item.label : undefined}
-                    isActive={isActive(item.path)}
-                  >
-                    <NavLink
-                      to={item.path}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${
-                          isActive
+              {cmsMenu
+                .filter(i => hasPermission(i.module, i.action))
+                .map(item => (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={state === "collapsed" ? item.label : undefined}
+                      isActive={isActive(item.path)}
+                    >
+                      <NavLink
+                        to={item.path}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-2 py-2 rounded-md transition-colors ${isActive
                             ? "bg-accent text-accent-foreground"
                             : "hover:bg-accent"
-                        }`
-                      }
-                    >
-                      <ReceiptText className="h-4 w-4" />
-                      <span className="text-sm">{item.label}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                          }`
+                        }
+                      >
+                        <ReceiptText className="h-4 w-4" />
+                        <span className="text-sm">{item.label}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

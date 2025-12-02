@@ -24,13 +24,24 @@ function EmployeeForm() {
     permissions: {} as Record<string, string[]>,
   });
 
-  const MODULE_ACTIONS = {
-    "employee-management": ["view", "create", "update", "delete"],
-    leads: ["view", "create", "update", "delete"],
-    "loan-requests": ["view", "create", "update", "delete"],
-    dashboard: ["view"],
-    logs: ["view"],
-  } as const;
+const MODULE_ACTIONS = {
+  "employee-management": ["view", "create", "update", "delete"],
+  leads: ["view", "create", "update", "delete"],
+  "loan-requests": ["view", "create", "update", "delete"],
+
+  // ✅ CMS
+  blogs: ["view", "create", "update", "delete"],
+  testimonials: ["view", "create", "update", "delete"],
+  "financial-dictionary": ["view", "create", "update", "delete"],
+  news: ["view", "create", "update", "delete"],
+
+  // ✅ FEATURES
+  "utm-links": ["view", "create", "update", "delete"],
+
+  dashboard: ["view"],
+  logs: ["view"],
+} as const;
+
 
   // ✅ Fetch Employee details if editing
   useEffect(() => {
