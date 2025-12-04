@@ -182,6 +182,24 @@ export default function BlogForm() {
           </div>
 
           <div>
+            <Label>User Defined URL (optional)</Label>
+            <div className="flex rounded-md shadow-sm mt-1">
+              <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                https://1infinz.com/blogs/
+              </span>
+              <Input
+                {...register("userDefinedUrl")}
+                className="rounded-l-none"
+                placeholder="custom-path"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Only type the last part, for example <code>my-first-blog</code>. The full URL
+              will be shown as <code>https://1infinz.com/blogs/my-first-blog</code>.
+            </p>
+          </div>
+
+          <div>
             <Label>Open Graph Image</Label>
             <Input type="file" accept="image/*" onChange={handleMetaImage} />
             {metaImage && <img src={metaImage} className="w-36 mt-2 rounded" />}

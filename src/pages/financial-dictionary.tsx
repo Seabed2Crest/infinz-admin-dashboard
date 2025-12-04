@@ -10,6 +10,7 @@ import {
 interface FormData {
   iconUrl: string;
   iconKey?: string;
+  iconAlt?: string;
   title: string;
   category: string;
   description: string;
@@ -28,6 +29,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
     iconUrl: "",
     iconKey: "",
+    iconAlt: "",
     title: "",
     category: "",
     description: "",
@@ -111,6 +113,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
     setFormData({
       iconUrl: "",
       iconKey: "",
+      iconAlt: "",
       title: "",
       category: "",
       description: "",
@@ -125,6 +128,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
     setFormData({
       iconUrl: term.iconUrl,
       iconKey: term.iconKey,
+      iconAlt: term.iconAlt || "",
       title: term.title,
       category: term.category,
       description: term.description,
@@ -145,6 +149,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
       example: formData.example,
       iconUrl: formData.iconUrl,
       iconKey: formData.iconKey,
+      iconAlt: formData.iconAlt,
     };
 
     try {
@@ -158,6 +163,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
       setFormData({
         iconUrl: "",
         iconKey: "",
+        iconAlt: "",
         title: "",
         category: "",
         description: "",
@@ -176,6 +182,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
     setFormData({
       iconUrl: "",
       iconKey: "",
+      iconAlt: "",
       title: "",
       category: "",
       description: "",
@@ -305,6 +312,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Icon</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Title</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Icon Alt Text</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
                   <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -315,7 +323,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
                     <td className="px-6 py-4">
                       <img
                         src={term.iconUrl}
-                        alt={term.title}
+                        alt={term.iconAlt || term.title}
                         className="w-12 h-12 rounded-lg object-cover border border-gray-200"
                       />
                     </td>
@@ -326,6 +334,11 @@ const FinancialDictionaryAdmin: React.FC = () => {
                       <span className="px-3 py-1 bg-teal-100 text-teal-700 text-xs font-medium rounded-full">
                         {term.category}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-gray-600 text-sm line-clamp-2">
+                        {term.iconAlt || "—"}
+                      </p>
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-gray-600 text-sm line-clamp-2">{term.description}</p>
@@ -402,7 +415,7 @@ const FinancialDictionaryAdmin: React.FC = () => {
                   {iconPreview ? (
                     <img
                       src={iconPreview}
-                      alt="Preview"
+                      alt={formData.iconAlt || "Icon preview"}
                       className="w-32 h-32 rounded-xl object-cover border-2 border-gray-200 shadow-sm"
                     />
                   ) : (
@@ -411,23 +424,54 @@ const FinancialDictionaryAdmin: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div className="flex-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="icon-upload"
-                  />
-                  <label
-                    htmlFor="icon-upload"
-                    className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-3 rounded-lg cursor-pointer transition-colors font-medium shadow-md hover:shadow-lg"
-                  >
-                    <Upload size={18} />
-                    {iconPreview ? "Change Image" : "Upload Image"}
-                  </label>
-                  <p className="text-sm text-gray-500 mt-3">PNG, JPG, SVG up to 5MB</p>
-                  <p className="text-xs text-gray-400 mt-1">Recommended size: 512x512px</p>
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="icon-upload"
+                    />
+                    <label
+                      htmlFor="icon-upload"
+                      className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-3 rounded-lg cursor-pointer transition-colors font-medium shadow-md hover:shadow-lg"
+                    >
+                      <Upload size={18} />
+                      {iconPreview ? "Change Image" : "Upload Image"}
+                    </label>
+                    <p className="text-sm text-gray-500 mt-3">PNG, JPG, SVG up to 5MB</p>
+                    <p className="text-xs text-gray-400 mt-1">Recommended size: 512x512px</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Icon Alt Text
+                    </label>
+                    <input
+                      type="text"
+                      name="iconAlt"
+                      value={formData.iconAlt}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
+                      placeholder="e.g. Illustration representing APR"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Short description for screen readers and SEO.
+                    </p>
+                    <p className="mt-1 text-xs text-blue-600">
+                      You can find and download suitable icons from{" "}
+                      <a
+                        href="https://lucide.dev/icons/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline"
+                      >
+                        lucide.dev/icons
+                      </a>
+                      .
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

@@ -26,6 +26,7 @@ export interface FinancialDictionaryTerm {
   example?: string;
   iconUrl: string;
   iconKey?: string;
+  iconAlt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -39,6 +40,7 @@ export interface NewsPost {
   content: string;
   imageUrl: string;
   imageKey?: string;
+  imageAlt?: string;
   publishedAt: string;
   createdAt?: string;
   updatedAt?: string;
@@ -106,6 +108,8 @@ export interface Blog {
   slug: string;
   thumbnail?: string;
   category?: string;
+  // Optional custom URL defined by admin
+  userDefinedUrl?: string;
   content: string;
   createdAt?: string;
   updatedAt?: string;

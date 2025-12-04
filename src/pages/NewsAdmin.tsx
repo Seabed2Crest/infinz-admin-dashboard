@@ -14,6 +14,7 @@ interface FormData {
   publishedAt: string;
   imageUrl: string;
   imageKey?: string;
+  imageAlt?: string;
 }
 
 const initialForm: FormData = {
@@ -24,6 +25,7 @@ const initialForm: FormData = {
   publishedAt: "",
   imageUrl: "",
   imageKey: "",
+  imageAlt: "",
 };
 
 const readableType = (type: NewsType) =>
@@ -132,6 +134,7 @@ const NewsAdmin: React.FC = () => {
       publishedAt: item.publishedAt ? item.publishedAt.slice(0, 10) : "",
       imageUrl: item.imageUrl,
       imageKey: item.imageKey,
+      imageAlt: item.imageAlt || "",
     });
   };
 
@@ -165,6 +168,7 @@ const NewsAdmin: React.FC = () => {
       publishedAt: formData.publishedAt,
       imageUrl: formData.imageUrl,
       imageKey: formData.imageKey,
+      imageAlt: formData.imageAlt,
     };
 
     try {
