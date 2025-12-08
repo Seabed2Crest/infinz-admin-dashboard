@@ -331,6 +331,13 @@ const Users = () => {
                   </div>
                   
                   <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">EMI Tenure</span>
+                    <span className="text-gray-800 font-medium text-sm">
+                      {getValueOrNA(user.emiTenure)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">Employment Type</span>
                     <Badge variant="outline" className="text-xs capitalize">
                       {getValueOrNA(user.employmentType)}
@@ -536,7 +543,7 @@ const Users = () => {
   const renderTableView = () => (
     <div className="w-full overflow-hidden">
       <div className="overflow-x-auto border rounded-lg">
-        <Table className="min-w-[2400px]">
+        <Table className="min-w-[2500px]">
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-[120px] sticky left-0 bg-white z-10">Customer ID</TableHead>
@@ -550,6 +557,7 @@ const Users = () => {
               <TableHead className="min-w-[100px]">Pincode</TableHead>
               <TableHead className="min-w-[120px]">Loan Type</TableHead>
               <TableHead className="min-w-[150px]">Required Loan Amount</TableHead>
+              <TableHead className="min-w-[120px]">EMI Tenure</TableHead>
               <TableHead className="min-w-[140px]">Employment Type</TableHead>
               <TableHead className="min-w-[150px]">Net Monthly Income</TableHead>
               <TableHead className="min-w-[160px]">Salary Payment Mode</TableHead>
@@ -612,6 +620,7 @@ const Users = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm font-medium">{formattedLoanAmount}</TableCell>
+                  <TableCell className="text-sm">{getValueOrNA(user.emiTenure)}</TableCell>
                   <TableCell className="capitalize text-sm">
                     {getValueOrNA(user.employmentType)}
                   </TableCell>
