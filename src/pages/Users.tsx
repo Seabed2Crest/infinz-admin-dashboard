@@ -43,6 +43,8 @@ const Users = () => {
   const [pincodeSearch, setPincodeSearch] = useState("");
   const [debouncedPincodeSearch, setDebouncedPincodeSearch] = useState("");
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
 
   const [selectedPincode, setSelectedPincode] = useState("");
   const [pincodeDropdownOpen, setPincodeDropdownOpen] = useState(false);
@@ -98,6 +100,8 @@ const Users = () => {
       ageFilter,
       salaryRange,
       loanAmountRange,
+      fromDate,
+      toDate,
       page,
     ],
     queryFn: () =>
@@ -109,10 +113,13 @@ const Users = () => {
         ageRange: ageFilter,
         salaryRange,
         loanAmountRange,
+        fromDate,
+        toDate,
         page,
         limit,
       }),
   });
+
 
   const users = usersData?.data?.users || [];
   const totalPages = usersData?.data?.totalPages || 1;
@@ -244,8 +251,8 @@ const Users = () => {
                     {user.fullName
                       ? user.fullName.substring(0, 2).toUpperCase()
                       : user.phoneNumber
-                      ? user.phoneNumber.substring(0, 2)
-                      : "U"}
+                        ? user.phoneNumber.substring(0, 2)
+                        : "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
@@ -253,8 +260,8 @@ const Users = () => {
                     {getValueOrNA(user.fullName)}
                   </h3>
                   <p className="text-gray-600 text-xs truncate">
-                    {isBusinessLoan 
-                      ? getValueOrNA(user.businessName) 
+                    {isBusinessLoan
+                      ? getValueOrNA(user.businessName)
                       : getValueOrNA(user.companyName)}
                   </p>
                 </div>
@@ -262,11 +269,10 @@ const Users = () => {
               <div className="flex items-center space-x-2">
                 <Badge
                   variant="outline"
-                  className={`${
-                    isBusinessLoan 
-                      ? "bg-purple-100 text-purple-800 border-purple-200" 
-                      : "bg-blue-100 text-blue-800 border-blue-200"
-                  } border-0 capitalize text-xs`}
+                  className={`${isBusinessLoan
+                    ? "bg-purple-100 text-purple-800 border-purple-200"
+                    : "bg-blue-100 text-blue-800 border-blue-200"
+                    } border-0 capitalize text-xs`}
                 >
                   {getValueOrNA(user.loanType)}
                 </Badge>
@@ -299,7 +305,7 @@ const Users = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start space-x-3">
                     <Mail className="h-4 w-4 text-gray-400 mt-0.5" />
                     <div>
@@ -309,7 +315,7 @@ const Users = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start space-x-3">
                     <Calendar className="h-4 w-4 text-gray-400 mt-0.5" />
                     <div>
@@ -329,21 +335,21 @@ const Users = () => {
                       {formattedLoanAmount}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">EMI Tenure</span>
                     <span className="text-gray-800 font-medium text-sm">
                       {getValueOrNA(user.emiTenure)}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">Employment Type</span>
                     <Badge variant="outline" className="text-xs capitalize">
                       {getValueOrNA(user.employmentType)}
                     </Badge>
                   </div>
-                  
+
                   {!isBusinessLoan && (
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-500">Monthly Income</span>
@@ -359,15 +365,14 @@ const Users = () => {
                   <div>
                     <p className="text-xs text-gray-500">Status</p>
                     <Badge
-                      className={`${
-                        user.status === "pending"
-                          ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
-                          : user.status === "completed"
+                      className={`${user.status === "pending"
+                        ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
+                        : user.status === "completed"
                           ? "bg-green-100 text-green-800 hover:bg-green-100"
                           : user.status === "rejected"
-                          ? "bg-red-100 text-red-800 hover:bg-red-100"
-                          : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-                      } text-xs capitalize`}
+                            ? "bg-red-100 text-red-800 hover:bg-red-100"
+                            : "bg-gray-100 text-gray-800 hover:bg-gray-100"
+                        } text-xs capitalize`}
                     >
                       {getValueOrNA(user.status)}
                     </Badge>
@@ -385,7 +390,7 @@ const Users = () => {
               {isExpanded && (
                 <div className="mt-6 pt-6 border-t space-y-4 animate-in fade-in duration-200">
                   <h4 className="font-medium text-sm text-gray-700">Additional Details</h4>
-                  
+
                   {/* PAN & Pincode */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -414,7 +419,7 @@ const Users = () => {
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-start space-x-3">
                         <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
                         <div>
@@ -424,7 +429,7 @@ const Users = () => {
                           </p>
                         </div>
                       </div>
-                      
+
                       {user.salaryPaymentMode && (
                         <div>
                           <p className="text-xs text-gray-500">Salary Payment Mode</p>
@@ -433,7 +438,7 @@ const Users = () => {
                           </p>
                         </div>
                       )}
-                      
+
                       {user.salarySlipBankStatement && (
                         <div>
                           <p className="text-xs text-gray-500">Salary Slip / Bank Statement</p>
@@ -460,35 +465,35 @@ const Users = () => {
                           {getValueOrNA(user.companyType)}
                         </p>
                       </div>
-                      
+
                       <div>
                         <p className="text-xs text-gray-500">Annual Turnover</p>
                         <p className="text-gray-800 font-medium text-sm">
                           {formattedTurnover}
                         </p>
                       </div>
-                      
+
                       <div>
                         <p className="text-xs text-gray-500">Industry / Nature of Business</p>
                         <p className="text-gray-800 font-medium text-sm">
                           {getValueOrNA(user.industryNatureOfBusiness)}
                         </p>
                       </div>
-                      
+
                       <div>
                         <p className="text-xs text-gray-500">Business Registration Number</p>
                         <p className="text-gray-800 font-medium text-sm">
                           {getValueOrNA(user.businessRegistrationNumber)}
                         </p>
                       </div>
-                      
+
                       <div>
                         <p className="text-xs text-gray-500">Date of Incorporation</p>
                         <p className="text-gray-800 font-medium text-sm">
                           {formattedIncorporationDate}
                         </p>
                       </div>
-                      
+
                       <div>
                         <p className="text-xs text-gray-500">Business/Company Pincode</p>
                         <p className="text-gray-800 font-medium text-sm">
@@ -502,7 +507,7 @@ const Users = () => {
                   <div className="pt-3 border-t">
                     <p className="text-xs text-gray-500 mb-1">Created Date</p>
                     <p className="text-gray-800 text-sm">{formattedSysDate}</p>
-                    
+
                     <p className="text-xs text-gray-500 mt-3 mb-1">Customer ID</p>
                     <p className="text-gray-800 font-mono text-xs truncate">
                       {getValueOrNA(user.customerId)}
@@ -610,11 +615,10 @@ const Users = () => {
                   <TableCell>
                     <Badge
                       variant="outline"
-                      className={`${
-                        isBusinessLoan
-                          ? "bg-purple-100 text-purple-800 border-purple-200"
-                          : "bg-blue-100 text-blue-800 border-blue-200"
-                      } border-0 text-xs capitalize`}
+                      className={`${isBusinessLoan
+                        ? "bg-purple-100 text-purple-800 border-purple-200"
+                        : "bg-blue-100 text-blue-800 border-blue-200"
+                        } border-0 text-xs capitalize`}
                     >
                       {getValueOrNA(user.loanType)}
                     </Badge>
@@ -671,15 +675,14 @@ const Users = () => {
                   <TableCell>
                     <Badge
                       variant="outline"
-                      className={`${
-                        user.status === "pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : user.status === "completed"
+                      className={`${user.status === "pending"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : user.status === "completed"
                           ? "bg-green-100 text-green-800"
                           : user.status === "rejected"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-800"
-                      } border-0 text-xs capitalize`}
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                        } border-0 text-xs capitalize`}
                     >
                       {getValueOrNA(user.status)}
                     </Badge>
@@ -716,8 +719,8 @@ const Users = () => {
             Export Filtered
           </Button>
 
-          <Button 
-            variant="default" 
+          <Button
+            variant="default"
             onClick={() => setExportModalOpen(true)}
             className="text-sm"
           >
@@ -898,6 +901,35 @@ const Users = () => {
               <SelectItem value="above-20l">Above ₹20L</SelectItem>
             </SelectContent>
           </Select>
+          <div className="flex gap-3">
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-500 mb-1">From Date</label>
+              <Input
+                type="date"
+                value={fromDate}
+                onChange={(e) => {
+                  setFromDate(e.target.value);
+                  setPage(1);
+                }}
+                className="w-[160px]"
+              />
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-500 mb-1">To Date</label>
+              <Input
+                type="date"
+                value={toDate}
+                min={fromDate || undefined}
+                onChange={(e) => {
+                  setToDate(e.target.value);
+                  setPage(1);
+                }}
+                className="w-[160px]"
+              />
+            </div>
+          </div>
+
         </div>
       </div>
 
