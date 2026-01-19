@@ -1,3 +1,4 @@
+//User.tsx 
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -5,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+
 import {
   Select,
   SelectContent,
@@ -28,6 +32,7 @@ import { ExportModal } from "@/components/ExportModal";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const Users = () => {
+  const queryClient = useQueryClient();
   const pincodeRef = useRef<HTMLDivElement>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,6 +53,8 @@ const Users = () => {
 
   const [selectedPincode, setSelectedPincode] = useState("");
   const [pincodeDropdownOpen, setPincodeDropdownOpen] = useState(false);
+ const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+
 
   const limit = 10;
 
@@ -225,6 +232,62 @@ const Users = () => {
     }
   };
 
+
+  const statusMutation = useMutation({
+    mutationFn: adminApi.updateLeadStatus,
+    onSuccess: (response) => {
+      toast.success(response.message || "Status updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || "Failed to update status";
+      toast.error(errorMessage);
+    }
+  });
+
+  const handleStatusUpdate = (loanId: string, loanType: string, newStatus: string) => {
+    statusMutation.mutate({ loanId, loanType, status: newStatus });
+  };
+
+
+
+  
+const bulkStatusMutation = useMutation({
+  mutationFn: (updates: Array<{ loanId: string; loanType: string; status: string }>) => 
+    adminApi.bulkUpdateLeadStatus(updates),
+  onSuccess: (response) => {
+    toast.success(response.message || "Bulk update successful");
+    setSelectedLeads(new Set());
+    queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+  },
+  onError: (error: any) => {
+    const errorMessage = error.response?.data?.message || error.message || "Bulk update failed";
+    toast.error(errorMessage);
+  },
+});
+
+const toggleLeadSelection = (id: string, type: string) => {
+  const key = `${id}|${type}`;
+  setSelectedLeads((prev) => {
+    const next = new Set(prev);
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    return next;
+  });
+};
+
+// 3. Correct Bulk Update Handler
+const handleBulkUpdate = (newStatus: string) => {
+  const updates = Array.from(selectedLeads).map((key) => {
+    const [loanId, loanType] = key.split("|");
+    return { loanId, loanType, status: newStatus };
+  });
+  bulkStatusMutation.mutate(updates);
+};
+
   // CARD VIEW - Improved with collapsible sections
   const renderCardView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -361,29 +424,36 @@ const Users = () => {
                 </div>
 
                 {/* Status and Source */}
-                <div className="flex items-center justify-between pt-3 border-t">
-                  <div>
-                    <p className="text-xs text-gray-500">Status</p>
-                    <Badge
-                      className={`${user.status === "pending"
-                        ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
-                        : user.status === "completed"
-                          ? "bg-green-100 text-green-800 hover:bg-green-100"
-                          : user.status === "rejected"
-                            ? "bg-red-100 text-red-800 hover:bg-red-100"
-                            : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-                        } text-xs capitalize`}
-                    >
-                      {getValueOrNA(user.status)}
-                    </Badge>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500">Source</p>
-                    <p className="text-gray-800 font-medium text-sm capitalize">
-                      {getValueOrNA(user.source)}
-                    </p>
-                  </div>
-                </div>
+<div className="flex items-center justify-between border-t pt-4 mt-2">
+  <div className="flex items-center gap-3">
+    <input 
+      type="checkbox" 
+      checked={selectedLeads.has(`${user._id}|${user.loanType}`)}
+      onChange={() => toggleLeadSelection(user._id, user.loanType)}
+      className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600"
+    />
+    {/* <p className="text-sm font-semibold text-gray-700">Update Status</p> */}
+  </div>
+  
+  <Select
+    value={user.status || "pending"}
+    onValueChange={(newStatus) => handleStatusUpdate(user._id, user.loanType, newStatus)}
+    disabled={statusMutation.isPending}
+  >
+    <SelectTrigger className={`h-9 w-[130px] text-xs capitalize font-bold border-2 shadow-sm ${
+      user.status === 'approved' ? 'text-green-600 border-green-200 bg-green-50/30' : 
+      user.status === 'rejected' ? 'text-red-600 border-red-200 bg-red-50/30' : 
+      'text-yellow-600 border-yellow-200 bg-yellow-50/30'
+    }`}>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="pending" className="text-yellow-600">Pending</SelectItem>
+      <SelectItem value="approved" className="text-green-600">Approved</SelectItem>
+      <SelectItem value="rejected" className="text-red-600">Rejected</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
               </div>
 
               {/* Expanded Details Section */}
@@ -672,21 +742,34 @@ const Users = () => {
                   <TableCell className="text-sm">
                     {isBusinessLoan ? getValueOrNA(user.businessCompanyPincode) : "N/A"}
                   </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={`${user.status === "pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : user.status === "completed"
-                          ? "bg-green-100 text-green-800"
-                          : user.status === "rejected"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-gray-100 text-gray-800"
-                        } border-0 text-xs capitalize`}
-                    >
-                      {getValueOrNA(user.status)}
-                    </Badge>
-                  </TableCell>
+             <TableCell>
+  <div className="flex items-center space-x-2">
+    <input 
+      type="checkbox" 
+      checked={Array.from(selectedLeads).some(l => l.id === user._id)}
+      onChange={() => toggleLeadSelection(user._id, user.loanType)}
+      className="h-4 w-4 rounded border-gray-300"
+    />
+    <Select
+      value={user.status || "pending"}
+      onValueChange={(val) => handleStatusUpdate(user._id, user.loanType, val)}
+      disabled={statusMutation.isPending}
+    >
+      <SelectTrigger className={`h-8 w-[110px] text-xs font-semibold ${
+        user.status === 'approved' ? 'text-green-600 border-green-200' : 
+        user.status === 'rejected' ? 'text-red-600 border-red-200' : 
+        'text-yellow-600 border-yellow-200'
+      }`}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="pending" className="text-yellow-600">Pending</SelectItem>
+        <SelectItem value="approved" className="text-green-600">Approved</SelectItem>
+        <SelectItem value="rejected" className="text-red-600">Rejected</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
+</TableCell>
                 </TableRow>
               );
             })}
@@ -1021,6 +1104,47 @@ const Users = () => {
           loanAmountRange,
         }}
       />
+      
+      {selectedLeads.size > 0 && (
+  <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white shadow-2xl rounded-2xl px-6 py-4 flex items-center gap-6 z-[100] animate-in fade-in slide-in-from-bottom-10 duration-500 border border-slate-800">
+    <div className="flex items-center gap-3">
+      <div className="bg-blue-500 text-white text-xs font-bold h-6 w-6 flex items-center justify-center rounded-full">
+        {selectedLeads.size}
+      </div>
+      <span className="text-sm font-medium">Leads Selected</span>
+    </div>
+
+    <div className="h-8 w-px bg-slate-700" />
+
+    <div className="flex items-center gap-4">
+      <p className="text-xs text-slate-400 font-medium">Update Status to:</p>
+      <Select 
+  onValueChange={(value) => handleBulkUpdate(value)} 
+  disabled={bulkStatusMutation.isPending}
+>
+  <SelectTrigger className="w-[140px] h-9 bg-slate-800 border-slate-700 text-white text-xs">
+    <SelectValue placeholder="Choose Status" />
+  </SelectTrigger>
+  <SelectContent className="bg-slate-800 border-slate-700 text-white">
+    <SelectItem value="pending" className="text-yellow-400 focus:bg-slate-700 focus:text-yellow-400">Pending</SelectItem>
+    <SelectItem value="approved" className="text-green-400 focus:bg-slate-700 focus:text-green-400">Approved</SelectItem>
+    <SelectItem value="rejected" className="text-red-400 focus:bg-slate-700 focus:text-red-400">Rejected</SelectItem>
+  </SelectContent>
+</Select>
+
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="text-slate-400 hover:text-white hover:bg-slate-800"
+        onClick={() => setSelectedLeads(new Set())}
+      >
+        Cancel
+      </Button>
+    </div>
+  </div>
+)}
+
+      
     </div>
   );
 };

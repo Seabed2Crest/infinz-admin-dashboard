@@ -1,6 +1,7 @@
+//api.ts
 // API Configuration
-const API_BASE_URL = "https://backend.infinz.seabed2crest.com/api/v1";
-// export const API_BASE_URL = "http://localhost:8085/api/v1";
+// const API_BASE_URL = "https://backend.infinz.seabed2crest.com/api/v1";
+export const API_BASE_URL = "http://localhost:8085/api/v1";
 // ⭐ NEW: Testimonial Type
 export interface Testimonial {
   _id?: string;
@@ -81,6 +82,12 @@ export interface NewsPost {
   updatedAt?: string;
 }
 
+
+export interface StatusUpdateResponse {
+  _id: string;
+  status: "pending" | "approved" | "rejected";
+  [key: string]: any;
+}
 
 // Types
 export interface EmploymentDetails {
@@ -401,6 +408,24 @@ async deleteTestimonial(id: string): Promise<ApiResponse<{ message: string }>> {
       method: "DELETE",
     });
   }
+
+async updateLeadStatus(payload: { 
+  loanId: string; 
+  loanType: string; 
+  status: string 
+}): Promise<ApiResponse<StatusUpdateResponse>> {
+  return this.request<StatusUpdateResponse>("/admin/update-lead-status", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+async bulkUpdateLeadStatus(updates: Array<{ loanId: string; loanType: string; status: string }>): Promise<ApiResponse<any>> {
+  return this.request<any>("/admin/bulk-update-status", {
+    method: "PUT",
+    body: JSON.stringify({ updates }),
+  });
+}
 
   private async request<T>(
     endpoint: string,
@@ -966,6 +991,16 @@ export const adminApi = {
     id: string;
     permissions: Record<string, string[]>;
   }) => apiClient.updateEmployeePermissions(payload),
+
+   updateLeadStatus: (payload: { loanId: string; loanType: string; status: string }) => 
+    apiClient.updateLeadStatus(payload),
+
+    bulkUpdateLeadStatus: (updates: {
+    loanId: string;
+    loanType: string;
+    status: string;
+  }[]) => apiClient.bulkUpdateLeadStatus(updates),
+  
 };
 
 export const blogApi = {
@@ -1060,6 +1095,9 @@ export const utmLinkApi = {
     apiClient.updateUtmLink(id, payload),
   delete: (id: string) => apiClient.deleteUtmLink(id),
 };
+
+
+
 
 
 
