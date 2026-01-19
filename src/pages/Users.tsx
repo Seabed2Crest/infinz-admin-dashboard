@@ -1,4 +1,4 @@
-//User.tsx 
+//User.tsx
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -26,10 +26,30 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Search, Grid3X3, List, Loader2, Download, ChevronDown, ChevronUp, Calendar, Phone, Mail, MapPin, Building, IndianRupee, User, FileText } from "lucide-react";
+import {
+  Search,
+  Grid3X3,
+  List,
+  Loader2,
+  Download,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Phone,
+  Mail,
+  MapPin,
+  Building,
+  IndianRupee,
+  User,
+  FileText,
+} from "lucide-react";
 import { adminApi } from "@/lib/api";
 import { ExportModal } from "@/components/ExportModal";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const Users = () => {
   const queryClient = useQueryClient();
@@ -53,8 +73,7 @@ const Users = () => {
 
   const [selectedPincode, setSelectedPincode] = useState("");
   const [pincodeDropdownOpen, setPincodeDropdownOpen] = useState(false);
- const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
-
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
 
   const limit = 10;
 
@@ -127,14 +146,13 @@ const Users = () => {
       }),
   });
 
-
   const users = usersData?.data?.users || [];
   const totalPages = usersData?.data?.totalPages || 1;
   const total = usersData?.data?.total || 0;
 
   // Toggle card expansion
   const toggleCardExpansion = (userId: string) => {
-    setExpandedCards(prev => {
+    setExpandedCards((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(userId)) {
         newSet.delete(userId);
@@ -167,7 +185,7 @@ const Users = () => {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return dateString;
-      return date.toLocaleDateString('en-GB');
+      return date.toLocaleDateString("en-GB");
     } catch {
       return dateString;
     }
@@ -179,7 +197,7 @@ const Users = () => {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return dateString;
-      return date.toLocaleString('en-GB');
+      return date.toLocaleString("en-GB");
     } catch {
       return dateString;
     }
@@ -193,7 +211,7 @@ const Users = () => {
     if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
     if (num >= 100000) return `₹${(num / 100000).toFixed(2)} L`;
     if (num >= 1000) return `₹${(num / 1000).toFixed(2)} K`;
-    return `₹${num.toLocaleString('en-IN')}`;
+    return `₹${num.toLocaleString("en-IN")}`;
   };
 
   // Get N/A if empty
@@ -232,7 +250,6 @@ const Users = () => {
     }
   };
 
-
   const statusMutation = useMutation({
     mutationFn: adminApi.updateLeadStatus,
     onSuccess: (response) => {
@@ -240,63 +257,87 @@ const Users = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || error.message || "Failed to update status";
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update status";
       toast.error(errorMessage);
-    }
+    },
   });
 
-  const handleStatusUpdate = (loanId: string, loanType: string, newStatus: string) => {
+  const handleStatusUpdate = (
+    loanId: string,
+    loanType: string,
+    newStatus: string,
+  ) => {
     statusMutation.mutate({ loanId, loanType, status: newStatus });
   };
 
+  const handleSelectAllOnPage = () => {
+    const pageLeadKeys = users.map((u: any) => `${u._id}|${u.loanType}`);
 
+    const allSelected = pageLeadKeys.every((key) => selectedLeads.has(key));
 
-  
-const bulkStatusMutation = useMutation({
-  mutationFn: (updates: Array<{ loanId: string; loanType: string; status: string }>) => 
-    adminApi.bulkUpdateLeadStatus(updates),
-  onSuccess: (response) => {
-    toast.success(response.message || "Bulk update successful");
-    setSelectedLeads(new Set());
-    queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-  },
-  onError: (error: any) => {
-    const errorMessage = error.response?.data?.message || error.message || "Bulk update failed";
-    toast.error(errorMessage);
-  },
-});
-
-const toggleLeadSelection = (id: string, type: string) => {
-  const key = `${id}|${type}`;
-  setSelectedLeads((prev) => {
-    const next = new Set(prev);
-    if (next.has(key)) {
-      next.delete(key);
+    if (allSelected) {
+      const newSelectedLeads = new Set(selectedLeads);
+      pageLeadKeys.forEach((key) => newSelectedLeads.delete(key));
+      setSelectedLeads(newSelectedLeads);
     } else {
-      next.add(key);
+      const newSelectedLeads = new Set(selectedLeads);
+      pageLeadKeys.forEach((key) => newSelectedLeads.add(key));
+      setSelectedLeads(newSelectedLeads);
     }
-    return next;
-  });
-};
+  };
 
-// 3. Correct Bulk Update Handler
-const handleBulkUpdate = (newStatus: string) => {
-  const updates = Array.from(selectedLeads).map((key) => {
-    const [loanId, loanType] = key.split("|");
-    return { loanId, loanType, status: newStatus };
+  const bulkStatusMutation = useMutation({
+    mutationFn: (
+      updates: Array<{ loanId: string; loanType: string; status: string }>,
+    ) => adminApi.bulkUpdateLeadStatus(updates),
+    onSuccess: (response) => {
+      toast.success(response.message || "Bulk update successful");
+      setSelectedLeads(new Set());
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error.response?.data?.message || error.message || "Bulk update failed";
+      toast.error(errorMessage);
+    },
   });
-  bulkStatusMutation.mutate(updates);
-};
+
+  const toggleLeadSelection = (id: string, type: string) => {
+    const key = `${id}|${type}`;
+    setSelectedLeads((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  // 3. Correct Bulk Update Handler
+  const handleBulkUpdate = (newStatus: string) => {
+    const updates = Array.from(selectedLeads).map((key) => {
+      const [loanId, loanType] = key.split("|");
+      return { loanId, loanType, status: newStatus };
+    });
+    bulkStatusMutation.mutate(updates);
+  };
 
   // CARD VIEW - Improved with collapsible sections
   const renderCardView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-      {users.map((user: any,  index: number) => {
-          const sNo = (page - 1) * limit + (index + 1);
+      {users.map((user: any, index: number) => {
+        const sNo = (page - 1) * limit + (index + 1);
         const age = calculateAge(user.dateOfBirth);
         const formattedSysDate = formatDateTime(user.sysDate);
         const formattedDOB = formatDate(user.dateOfBirth);
-        const formattedIncorporationDate = formatDate(user.dateOfIncorporationStartDate);
+        const formattedIncorporationDate = formatDate(
+          user.dateOfIncorporationStartDate,
+        );
         const formattedLoanAmount = formatAmount(user.requiredLoanAmount);
         const formattedIncome = formatAmount(user.netMonthlyIncome);
         const formattedTurnover = formatAmount(user.annualTurnover);
@@ -333,10 +374,11 @@ const handleBulkUpdate = (newStatus: string) => {
               <div className="flex items-center space-x-2">
                 <Badge
                   variant="outline"
-                  className={`${isBusinessLoan
-                    ? "bg-purple-100 text-purple-800 border-purple-200"
-                    : "bg-blue-100 text-blue-800 border-blue-200"
-                    } border-0 capitalize text-xs`}
+                  className={`${
+                    isBusinessLoan
+                      ? "bg-purple-100 text-purple-800 border-purple-200"
+                      : "bg-blue-100 text-blue-800 border-blue-200"
+                  } border-0 capitalize text-xs`}
                 >
                   {getValueOrNA(user.loanType)}
                 </Badge>
@@ -394,7 +436,9 @@ const handleBulkUpdate = (newStatus: string) => {
                 {/* Loan Details */}
                 <div className="space-y-3 pt-3 border-t">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Required Loan Amount</span>
+                    <span className="text-xs text-gray-500">
+                      Required Loan Amount
+                    </span>
                     <span className="text-gray-800 font-semibold text-sm">
                       {formattedLoanAmount}
                     </span>
@@ -408,7 +452,9 @@ const handleBulkUpdate = (newStatus: string) => {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Employment Type</span>
+                    <span className="text-xs text-gray-500">
+                      Employment Type
+                    </span>
                     <Badge variant="outline" className="text-xs capitalize">
                       {getValueOrNA(user.employmentType)}
                     </Badge>
@@ -416,7 +462,9 @@ const handleBulkUpdate = (newStatus: string) => {
 
                   {!isBusinessLoan && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">Monthly Income</span>
+                      <span className="text-xs text-gray-500">
+                        Monthly Income
+                      </span>
                       <span className="text-gray-800 font-medium text-sm">
                         {formattedIncome}
                       </span>
@@ -425,42 +473,60 @@ const handleBulkUpdate = (newStatus: string) => {
                 </div>
 
                 {/* Status and Source */}
-<div className="flex items-center justify-between border-t pt-4 mt-2">
-  <div className="flex items-center gap-3">
-    <input 
-      type="checkbox" 
-      checked={selectedLeads.has(`${user._id}|${user.loanType}`)}
-      onChange={() => toggleLeadSelection(user._id, user.loanType)}
-      className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600"
-    />
-    {/* <p className="text-sm font-semibold text-gray-700">Update Status</p> */}
-  </div>
-  
-  <Select
-    value={user.status || "pending"}
-    onValueChange={(newStatus) => handleStatusUpdate(user._id, user.loanType, newStatus)}
-    disabled={statusMutation.isPending}
-  >
-    <SelectTrigger className={`h-9 w-[130px] text-xs capitalize font-bold border-2 shadow-sm ${
-      user.status === 'approved' ? 'text-green-600 border-green-200 bg-green-50/30' : 
-      user.status === 'rejected' ? 'text-red-600 border-red-200 bg-red-50/30' : 
-      'text-yellow-600 border-yellow-200 bg-yellow-50/30'
-    }`}>
-      <SelectValue />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="pending" className="text-yellow-600">Pending</SelectItem>
-      <SelectItem value="approved" className="text-green-600">Approved</SelectItem>
-      <SelectItem value="rejected" className="text-red-600">Rejected</SelectItem>
-    </SelectContent>
-  </Select>
-</div>
+                <div className="flex items-center justify-between border-t pt-4 mt-2">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedLeads.has(
+                        `${user._id}|${user.loanType}`,
+                      )}
+                      onChange={() =>
+                        toggleLeadSelection(user._id, user.loanType)
+                      }
+                      className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600"
+                    />
+                    {/* <p className="text-sm font-semibold text-gray-700">Update Status</p> */}
+                  </div>
+
+                  <Select
+                    value={user.status || "pending"}
+                    onValueChange={(newStatus) =>
+                      handleStatusUpdate(user._id, user.loanType, newStatus)
+                    }
+                    disabled={statusMutation.isPending}
+                  >
+                    <SelectTrigger
+                      className={`h-9 w-[130px] text-xs capitalize font-bold border-2 shadow-sm ${
+                        user.status === "approved"
+                          ? "text-green-600 border-green-200 bg-green-50/30"
+                          : user.status === "rejected"
+                            ? "text-red-600 border-red-200 bg-red-50/30"
+                            : "text-yellow-600 border-yellow-200 bg-yellow-50/30"
+                      }`}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending" className="text-yellow-600">
+                        Pending
+                      </SelectItem>
+                      <SelectItem value="approved" className="text-green-600">
+                        Approved
+                      </SelectItem>
+                      <SelectItem value="rejected" className="text-red-600">
+                        Rejected
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Expanded Details Section */}
               {isExpanded && (
                 <div className="mt-6 pt-6 border-t space-y-4 animate-in fade-in duration-200">
-                  <h4 className="font-medium text-sm text-gray-700">Additional Details</h4>
+                  <h4 className="font-medium text-sm text-gray-700">
+                    Additional Details
+                  </h4>
 
                   {/* PAN & Pincode */}
                   <div className="grid grid-cols-2 gap-4">
@@ -494,7 +560,9 @@ const handleBulkUpdate = (newStatus: string) => {
                       <div className="flex items-start space-x-3">
                         <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
                         <div>
-                          <p className="text-xs text-gray-500">Company Pincode</p>
+                          <p className="text-xs text-gray-500">
+                            Company Pincode
+                          </p>
                           <p className="text-gray-800 font-medium text-sm">
                             {getValueOrNA(user.companyPincode)}
                           </p>
@@ -503,7 +571,9 @@ const handleBulkUpdate = (newStatus: string) => {
 
                       {user.salaryPaymentMode && (
                         <div>
-                          <p className="text-xs text-gray-500">Salary Payment Mode</p>
+                          <p className="text-xs text-gray-500">
+                            Salary Payment Mode
+                          </p>
                           <p className="text-gray-800 font-medium text-sm">
                             {getValueOrNA(user.salaryPaymentMode)}
                           </p>
@@ -512,7 +582,9 @@ const handleBulkUpdate = (newStatus: string) => {
 
                       {user.salarySlipBankStatement && (
                         <div>
-                          <p className="text-xs text-gray-500">Salary Slip / Bank Statement</p>
+                          <p className="text-xs text-gray-500">
+                            Salary Slip / Bank Statement
+                          </p>
                           <a
                             href={user.salarySlipBankStatement}
                             className="text-blue-600 underline text-sm inline-flex items-center"
@@ -545,28 +617,36 @@ const handleBulkUpdate = (newStatus: string) => {
                       </div>
 
                       <div>
-                        <p className="text-xs text-gray-500">Industry / Nature of Business</p>
+                        <p className="text-xs text-gray-500">
+                          Industry / Nature of Business
+                        </p>
                         <p className="text-gray-800 font-medium text-sm">
                           {getValueOrNA(user.industryNatureOfBusiness)}
                         </p>
                       </div>
 
                       <div>
-                        <p className="text-xs text-gray-500">Business Registration Number</p>
+                        <p className="text-xs text-gray-500">
+                          Business Registration Number
+                        </p>
                         <p className="text-gray-800 font-medium text-sm">
                           {getValueOrNA(user.businessRegistrationNumber)}
                         </p>
                       </div>
 
                       <div>
-                        <p className="text-xs text-gray-500">Date of Incorporation</p>
+                        <p className="text-xs text-gray-500">
+                          Date of Incorporation
+                        </p>
                         <p className="text-gray-800 font-medium text-sm">
                           {formattedIncorporationDate}
                         </p>
                       </div>
 
                       <div>
-                        <p className="text-xs text-gray-500">Business/Company Pincode</p>
+                        <p className="text-xs text-gray-500">
+                          Business/Company Pincode
+                        </p>
                         <p className="text-gray-800 font-medium text-sm">
                           {getValueOrNA(user.businessCompanyPincode)}
                         </p>
@@ -581,7 +661,7 @@ const handleBulkUpdate = (newStatus: string) => {
 
                     <p className="text-xs text-gray-500 mt-3 mb-1">S.no</p>
                     <p className="text-gray-800 font-mono text-xs truncate">
-                      {/* {getValueOrNA(user.customerId)} */}  {sNo}
+                      {/* {getValueOrNA(user.customerId)} */} {sNo}
                     </p>
                   </div>
                 </div>
@@ -622,7 +702,10 @@ const handleBulkUpdate = (newStatus: string) => {
         <Table className="min-w-[2500px]">
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[120px] sticky left-0 bg-white z-10">S.no</TableHead>
+              {/* <TableHead className="min-w-[120px] sticky left-0 bg-white z-10">S.no</TableHead> */}
+              <TableHead className="min-w-[60px] w-[60px] sticky left-0 bg-white z-10">
+                S.no
+              </TableHead>
               <TableHead className="min-w-[150px]">Created Date</TableHead>
               <TableHead className="min-w-[100px]">Source</TableHead>
               <TableHead className="min-w-[180px]">Full Name</TableHead>
@@ -632,48 +715,74 @@ const handleBulkUpdate = (newStatus: string) => {
               <TableHead className="min-w-[120px]">PAN Card</TableHead>
               <TableHead className="min-w-[100px]">Pincode</TableHead>
               <TableHead className="min-w-[120px]">Loan Type</TableHead>
-              <TableHead className="min-w-[150px]">Required Loan Amount</TableHead>
+              <TableHead className="min-w-[150px]">
+                Required Loan Amount
+              </TableHead>
               <TableHead className="min-w-[120px]">EMI Tenure</TableHead>
               <TableHead className="min-w-[140px]">Employment Type</TableHead>
-              <TableHead className="min-w-[150px]">Net Monthly Income</TableHead>
-              <TableHead className="min-w-[160px]">Salary Payment Mode</TableHead>
+              <TableHead className="min-w-[150px]">
+                Net Monthly Income
+              </TableHead>
+              <TableHead className="min-w-[160px]">
+                Salary Payment Mode
+              </TableHead>
               <TableHead className="min-w-[200px]">Company Name</TableHead>
               <TableHead className="min-w-[130px]">Company Pincode</TableHead>
-              <TableHead className="min-w-[180px]">Salary Slip / Bank Statement</TableHead>
+              <TableHead className="min-w-[180px]">
+                Salary Slip / Bank Statement
+              </TableHead>
               <TableHead className="min-w-[200px]">Business Name</TableHead>
               <TableHead className="min-w-[140px]">Company Type</TableHead>
               <TableHead className="min-w-[150px]">Annual Turnover</TableHead>
-              <TableHead className="min-w-[200px]">Industry / Nature of Business</TableHead>
-              <TableHead className="min-w-[200px]">Business Registration Number</TableHead>
-              <TableHead className="min-w-[160px]">Date of Incorporation</TableHead>
-              <TableHead className="min-w-[160px]">Business/Company Pincode</TableHead>
+              <TableHead className="min-w-[200px]">
+                Industry / Nature of Business
+              </TableHead>
+              <TableHead className="min-w-[200px]">
+                Business Registration Number
+              </TableHead>
+              <TableHead className="min-w-[160px]">
+                Date of Incorporation
+              </TableHead>
+              <TableHead className="min-w-[160px]">
+                Business/Company Pincode
+              </TableHead>
               <TableHead className="min-w-[100px]">Status</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {users.map((user: any, index: number) => {
-               const sNo = (page - 1) * limit + (index + 1);
+              const sNo = (page - 1) * limit + (index + 1);
               const age = calculateAge(user.dateOfBirth);
               const formattedSysDate = formatDateTime(user.sysDate);
               const formattedDOB = formatDate(user.dateOfBirth);
-              const formattedIncorporationDate = formatDate(user.dateOfIncorporationStartDate);
+              const formattedIncorporationDate = formatDate(
+                user.dateOfIncorporationStartDate,
+              );
               const formattedLoanAmount = formatAmount(user.requiredLoanAmount);
               const formattedIncome = formatAmount(user.netMonthlyIncome);
               const formattedTurnover = formatAmount(user.annualTurnover);
               const isBusinessLoan = user.loanType === "Business Loan";
 
               return (
-                <TableRow key={user._id} className="hover:bg-gray-50 transition">
-                  <TableCell className="text-xs font-mono sticky left-0 bg-white z-10">
-                    {/* {getValueOrNA(user.customerId)} */}  {sNo}
+                <TableRow
+                  key={user._id}
+                  className="hover:bg-gray-50 transition"
+                >
+                  {/* <TableCell className="text-xs font-mono sticky left-0 bg-white z-10"> */}
+                  <TableCell className="text-xs font-medium w-[60px] sticky left-0 bg-white z-10 text-center">
+                    {/* {getValueOrNA(user.customerId)} */} {sNo}
                   </TableCell>
                   <TableCell className="text-sm">{formattedSysDate}</TableCell>
                   <TableCell className="capitalize text-sm">
                     {getValueOrNA(user.source)}
                   </TableCell>
-                  <TableCell className="text-sm">{getValueOrNA(user.fullName)}</TableCell>
-                  <TableCell className="text-sm">{getValueOrNA(user.phoneNumber)}</TableCell>
+                  <TableCell className="text-sm">
+                    {getValueOrNA(user.fullName)}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {getValueOrNA(user.phoneNumber)}
+                  </TableCell>
                   <TableCell className="text-sm truncate max-w-[200px]">
                     {getValueOrNA(user.email)}
                   </TableCell>
@@ -683,30 +792,41 @@ const handleBulkUpdate = (newStatus: string) => {
                   <TableCell className="uppercase text-sm">
                     {getValueOrNA(user.panCard)}
                   </TableCell>
-                  <TableCell className="text-sm">{getValueOrNA(user.pincode)}</TableCell>
+                  <TableCell className="text-sm">
+                    {getValueOrNA(user.pincode)}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
-                      className={`${isBusinessLoan
-                        ? "bg-purple-100 text-purple-800 border-purple-200"
-                        : "bg-blue-100 text-blue-800 border-blue-200"
-                        } border-0 text-xs capitalize`}
+                      className={`${
+                        isBusinessLoan
+                          ? "bg-purple-100 text-purple-800 border-purple-200"
+                          : "bg-blue-100 text-blue-800 border-blue-200"
+                      } border-0 text-xs capitalize`}
                     >
                       {getValueOrNA(user.loanType)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm font-medium">{formattedLoanAmount}</TableCell>
-                  <TableCell className="text-sm">{getValueOrNA(user.emiTenure)}</TableCell>
+                  <TableCell className="text-sm font-medium">
+                    {formattedLoanAmount}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {getValueOrNA(user.emiTenure)}
+                  </TableCell>
                   <TableCell className="capitalize text-sm">
                     {getValueOrNA(user.employmentType)}
                   </TableCell>
                   <TableCell className="text-sm">{formattedIncome}</TableCell>
-                  <TableCell className="text-sm">{getValueOrNA(user.salaryPaymentMode)}</TableCell>
+                  <TableCell className="text-sm">
+                    {getValueOrNA(user.salaryPaymentMode)}
+                  </TableCell>
                   <TableCell className="text-sm">
                     {!isBusinessLoan ? getValueOrNA(user.companyName) : "N/A"}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {!isBusinessLoan ? getValueOrNA(user.companyPincode) : "N/A"}
+                    {!isBusinessLoan
+                      ? getValueOrNA(user.companyPincode)
+                      : "N/A"}
                   </TableCell>
                   <TableCell className="text-sm">
                     {user.salarySlipBankStatement ? (
@@ -733,45 +853,73 @@ const handleBulkUpdate = (newStatus: string) => {
                     {isBusinessLoan ? formattedTurnover : "N/A"}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {isBusinessLoan ? getValueOrNA(user.industryNatureOfBusiness) : "N/A"}
+                    {isBusinessLoan
+                      ? getValueOrNA(user.industryNatureOfBusiness)
+                      : "N/A"}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {isBusinessLoan ? getValueOrNA(user.businessRegistrationNumber) : "N/A"}
+                    {isBusinessLoan
+                      ? getValueOrNA(user.businessRegistrationNumber)
+                      : "N/A"}
                   </TableCell>
                   <TableCell className="text-sm">
                     {isBusinessLoan ? formattedIncorporationDate : "N/A"}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {isBusinessLoan ? getValueOrNA(user.businessCompanyPincode) : "N/A"}
+                    {isBusinessLoan
+                      ? getValueOrNA(user.businessCompanyPincode)
+                      : "N/A"}
                   </TableCell>
-             <TableCell>
-  <div className="flex items-center space-x-2">
-    <input 
-      type="checkbox" 
-      checked={Array.from(selectedLeads).some(l => l.id === user._id)}
-      onChange={() => toggleLeadSelection(user._id, user.loanType)}
-      className="h-4 w-4 rounded border-gray-300"
-    />
-    <Select
-      value={user.status || "pending"}
-      onValueChange={(val) => handleStatusUpdate(user._id, user.loanType, val)}
-      disabled={statusMutation.isPending}
-    >
-      <SelectTrigger className={`h-8 w-[110px] text-xs font-semibold ${
-        user.status === 'approved' ? 'text-green-600 border-green-200' : 
-        user.status === 'rejected' ? 'text-red-600 border-red-200' : 
-        'text-yellow-600 border-yellow-200'
-      }`}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="pending" className="text-yellow-600">Pending</SelectItem>
-        <SelectItem value="approved" className="text-green-600">Approved</SelectItem>
-        <SelectItem value="rejected" className="text-red-600">Rejected</SelectItem>
-      </SelectContent>
-    </Select>
-  </div>
-</TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={Array.from(selectedLeads).some(
+                          (l) => l.id === user._id,
+                        )}
+                        onChange={() =>
+                          toggleLeadSelection(user._id, user.loanType)
+                        }
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <Select
+                        value={user.status || "pending"}
+                        onValueChange={(val) =>
+                          handleStatusUpdate(user._id, user.loanType, val)
+                        }
+                        disabled={statusMutation.isPending}
+                      >
+                        <SelectTrigger
+                          className={`h-8 w-[110px] text-xs font-semibold ${
+                            user.status === "approved"
+                              ? "text-green-600 border-green-200"
+                              : user.status === "rejected"
+                                ? "text-red-600 border-red-200"
+                                : "text-yellow-600 border-yellow-200"
+                          }`}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem
+                            value="pending"
+                            className="text-yellow-600"
+                          >
+                            Pending
+                          </SelectItem>
+                          <SelectItem
+                            value="approved"
+                            className="text-green-600"
+                          >
+                            Approved
+                          </SelectItem>
+                          <SelectItem value="rejected" className="text-red-600">
+                            Rejected
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </TableCell>
                 </TableRow>
               );
             })}
@@ -816,176 +964,201 @@ const handleBulkUpdate = (newStatus: string) => {
       </div>
 
       {/* Filters - Improved with wrapping */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[250px]">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search by mobile, name, PAN, email..."
-            className="pl-9"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPage(1);
-            }}
-          />
+      {/* Filters Block */}
+      <div className="flex flex-wrap gap-3 items-end">
+        <div className="flex flex-col relative flex-1 min-w-[250px]">
+          {/* <label className="text-xs text-gray-500 mb-1">Search</label> */}
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search by mobile, name, PAN, email..."
+              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Select
-            value={loanTypeFilter}
-            onValueChange={(value) => {
-              setLoanTypeFilter(value);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Loan Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Loans</SelectItem>
-              <SelectItem value="personal">Personal Loan</SelectItem>
-              <SelectItem value="business">Business Loan</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={platformFilter}
-            onValueChange={(value) => {
-              setPlatformFilter(value);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Platform" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Platforms</SelectItem>
-              <SelectItem value="web">Web</SelectItem>
-              <SelectItem value="android">Android</SelectItem>
-              <SelectItem value="ios">iOS</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={ageFilter}
-            onValueChange={(value) => {
-              setAgeFilter(value);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Age Range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Ages</SelectItem>
-              <SelectItem value="23-25">23–25 years</SelectItem>
-              <SelectItem value="26-35">26–35 years</SelectItem>
-              <SelectItem value="36-45">36–45 years</SelectItem>
-              <SelectItem value="46-60">46–60 years</SelectItem>
-              <SelectItem value="60+">60+ years</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* PINCODE DROPDOWN */}
-          <div ref={pincodeRef} className="relative w-[160px]">
-            <div
-              className="border rounded-md px-3 py-2 cursor-pointer bg-white flex justify-between items-center text-sm"
-              onClick={() => {
-                if (!selectedPincode)
-                  setPincodeDropdownOpen(!pincodeDropdownOpen);
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-500 mb-1">Loans</label>
+            <Select
+              value={loanTypeFilter}
+              onValueChange={(value) => {
+                setLoanTypeFilter(value);
+                setPage(1);
               }}
             >
-              {selectedPincode ? (
-                <>
-                  <span className="truncate">{selectedPincode}</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedPincode("");
-                      setPincodeSearch("");
-                      setPage(1);
-                    }}
-                    className="text-gray-400 hover:text-gray-600 ml-2"
-                  >
-                    ✕
-                  </button>
-                </>
-              ) : (
-                <span className="text-gray-400">Select Pincode</span>
-              )}
-            </div>
-
-            {pincodeDropdownOpen && !selectedPincode && (
-              <div className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto p-2">
-                <Input
-                  placeholder="Search pincode..."
-                  className="mb-2 text-sm"
-                  value={pincodeSearch}
-                  onChange={(e) => setPincodeSearch(e.target.value)}
-                />
-
-                {pincodeLoading ? (
-                  <p className="text-sm text-gray-500 p-2">Loading...</p>
-                ) : pincodes.length === 0 ? (
-                  <p className="text-sm text-gray-500 p-2">No pincodes found</p>
-                ) : (
-                  pincodes.map((pin: string) => (
-                    <div
-                      key={pin}
-                      onClick={() => {
-                        setSelectedPincode(pin);
-                        setPincodeDropdownOpen(false);
-                        setPage(1);
-                      }}
-                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 rounded-md text-sm"
-                    >
-                      {pin}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Loan Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Loans</SelectItem>
+                <SelectItem value="personal">Personal Loan</SelectItem>
+                <SelectItem value="business">Business Loan</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <Select
-            value={salaryRange}
-            onValueChange={(value) => {
-              setSalaryRange(value);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Salary Range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Salaries</SelectItem>
-              <SelectItem value="15k-30k">₹15K - ₹30K</SelectItem>
-              <SelectItem value="30k-50k">₹30K - ₹50K</SelectItem>
-              <SelectItem value="50k-1l">₹50K - ₹1L</SelectItem>
-              <SelectItem value="above-1l">Above ₹1L</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-500 mb-1">Platforms</label>
+            <Select
+              value={platformFilter}
+              onValueChange={(value) => {
+                setPlatformFilter(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Platform" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Platforms</SelectItem>
+                <SelectItem value="web">Web</SelectItem>
+                <SelectItem value="android">Android</SelectItem>
+                <SelectItem value="ios">iOS</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Select
-            value={loanAmountRange}
-            onValueChange={(value) => {
-              setLoanAmountRange(value);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Loan Amount" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Amounts</SelectItem>
-              <SelectItem value="50k-1l">₹50K - ₹1L</SelectItem>
-              <SelectItem value="1l-2l">₹1L - ₹2L</SelectItem>
-              <SelectItem value="2l-5l">₹2L - ₹5L</SelectItem>
-              <SelectItem value="5l-10l">₹5L - ₹10L</SelectItem>
-              <SelectItem value="10l-20l">₹10L - ₹20L</SelectItem>
-              <SelectItem value="above-20l">Above ₹20L</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-500 mb-1">Ages</label>
+            <Select
+              value={ageFilter}
+              onValueChange={(value) => {
+                setAgeFilter(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Age Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Ages</SelectItem>
+                <SelectItem value="23-25">23–25 years</SelectItem>
+                <SelectItem value="26-35">26–35 years</SelectItem>
+                <SelectItem value="36-45">36–45 years</SelectItem>
+                <SelectItem value="46-60">46–60 years</SelectItem>
+                <SelectItem value="60+">60+ years</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* PINCODE DROPDOWN */}
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-500 mb-1">Pincode</label>
+            <div ref={pincodeRef} className="relative w-[160px]">
+              <div
+                className="border rounded-md px-3 py-2 cursor-pointer bg-white flex justify-between items-center text-sm"
+                onClick={() => {
+                  if (!selectedPincode)
+                    setPincodeDropdownOpen(!pincodeDropdownOpen);
+                }}
+              >
+                {selectedPincode ? (
+                  <>
+                    <span className="truncate">{selectedPincode}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPincode("");
+                        setPincodeSearch("");
+                        setPage(1);
+                      }}
+                      className="text-gray-400 hover:text-gray-600 ml-2"
+                    >
+                      ✕
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-gray-400">Select Pincode</span>
+                )}
+              </div>
+
+              {pincodeDropdownOpen && !selectedPincode && (
+                <div className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto p-2">
+                  <Input
+                    placeholder="Search pincode..."
+                    className="mb-2 text-sm"
+                    value={pincodeSearch}
+                    onChange={(e) => setPincodeSearch(e.target.value)}
+                  />
+
+                  {pincodeLoading ? (
+                    <p className="text-sm text-gray-500 p-2">Loading...</p>
+                  ) : pincodes.length === 0 ? (
+                    <p className="text-sm text-gray-500 p-2">
+                      No pincodes found
+                    </p>
+                  ) : (
+                    pincodes.map((pin: string) => (
+                      <div
+                        key={pin}
+                        onClick={() => {
+                          setSelectedPincode(pin);
+                          setPincodeDropdownOpen(false);
+                          setPage(1);
+                        }}
+                        className="px-3 py-2 cursor-pointer hover:bg-gray-100 rounded-md text-sm"
+                      >
+                        {pin}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-500 mb-1">Salaries</label>
+            <Select
+              value={salaryRange}
+              onValueChange={(value) => {
+                setSalaryRange(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Salary Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Salaries</SelectItem>
+                <SelectItem value="15k-30k">₹15K - ₹30K</SelectItem>
+                <SelectItem value="30k-50k">₹30K - ₹50K</SelectItem>
+                <SelectItem value="50k-1l">₹50K - ₹1L</SelectItem>
+                <SelectItem value="above-1l">Above ₹1L</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-xs text-gray-500 mb-1">Amounts</label>
+            <Select
+              value={loanAmountRange}
+              onValueChange={(value) => {
+                setLoanAmountRange(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Loan Amount" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Amounts</SelectItem>
+                <SelectItem value="50k-1l">₹50K - ₹1L</SelectItem>
+                <SelectItem value="1l-2l">₹1L - ₹2L</SelectItem>
+                <SelectItem value="2l-5l">₹2L - ₹5L</SelectItem>
+                <SelectItem value="5l-10l">₹5L - ₹10L</SelectItem>
+                <SelectItem value="10l-20l">₹10L - ₹20L</SelectItem>
+                <SelectItem value="above-20l">Above ₹20L</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="flex gap-3">
             <div className="flex flex-col">
               <label className="text-xs text-gray-500 mb-1">From Date</label>
@@ -1014,15 +1187,28 @@ const handleBulkUpdate = (newStatus: string) => {
               />
             </div>
           </div>
-
         </div>
       </div>
 
       {/* VIEW TOGGLE */}
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">
-          Showing {users.length} of {total} results
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-600">
+            Showing {users.length} of {total} results
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSelectAllOnPage}
+            className={`text-xs h-8 ${users.length > 0 && users.every((u: any) => selectedLeads.has(`${u._id}|${u.loanType}`)) ? "bg-blue-50 border-blue-200 text-blue-600" : ""}`}
+          >
+            {users.length > 0 &&
+            users.every((u: any) => selectedLeads.has(`${u._id}|${u.loanType}`))
+              ? "Deselect All Page"
+              : "Select All on Page"}
+          </Button>
         </div>
+
         <ToggleGroup
           type="single"
           value={viewMode}
@@ -1106,47 +1292,62 @@ const handleBulkUpdate = (newStatus: string) => {
           loanAmountRange,
         }}
       />
-      
+
       {selectedLeads.size > 0 && (
-  <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white shadow-2xl rounded-2xl px-6 py-4 flex items-center gap-6 z-[100] animate-in fade-in slide-in-from-bottom-10 duration-500 border border-slate-800">
-    <div className="flex items-center gap-3">
-      <div className="bg-blue-500 text-white text-xs font-bold h-6 w-6 flex items-center justify-center rounded-full">
-        {selectedLeads.size}
-      </div>
-      <span className="text-sm font-medium">Leads Selected</span>
-    </div>
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white shadow-2xl rounded-2xl px-6 py-4 flex items-center gap-6 z-[100] animate-in fade-in slide-in-from-bottom-10 duration-500 border border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-500 text-white text-xs font-bold h-6 w-6 flex items-center justify-center rounded-full">
+              {selectedLeads.size}
+            </div>
+            <span className="text-sm font-medium">Leads Selected</span>
+          </div>
 
-    <div className="h-8 w-px bg-slate-700" />
+          <div className="h-8 w-px bg-slate-700" />
 
-    <div className="flex items-center gap-4">
-      <p className="text-xs text-slate-400 font-medium">Update Status to:</p>
-      <Select 
-  onValueChange={(value) => handleBulkUpdate(value)} 
-  disabled={bulkStatusMutation.isPending}
->
-  <SelectTrigger className="w-[140px] h-9 bg-slate-800 border-slate-700 text-white text-xs">
-    <SelectValue placeholder="Choose Status" />
-  </SelectTrigger>
-  <SelectContent className="bg-slate-800 border-slate-700 text-white">
-    <SelectItem value="pending" className="text-yellow-400 focus:bg-slate-700 focus:text-yellow-400">Pending</SelectItem>
-    <SelectItem value="approved" className="text-green-400 focus:bg-slate-700 focus:text-green-400">Approved</SelectItem>
-    <SelectItem value="rejected" className="text-red-400 focus:bg-slate-700 focus:text-red-400">Rejected</SelectItem>
-  </SelectContent>
-</Select>
+          <div className="flex items-center gap-4">
+            <p className="text-xs text-slate-400 font-medium">
+              Update Status to:
+            </p>
+            <Select
+              onValueChange={(value) => handleBulkUpdate(value)}
+              disabled={bulkStatusMutation.isPending}
+            >
+              <SelectTrigger className="w-[140px] h-9 bg-slate-800 border-slate-700 text-white text-xs">
+                <SelectValue placeholder="Choose Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                <SelectItem
+                  value="pending"
+                  className="text-yellow-400 focus:bg-slate-700 focus:text-yellow-400"
+                >
+                  Pending
+                </SelectItem>
+                <SelectItem
+                  value="approved"
+                  className="text-green-400 focus:bg-slate-700 focus:text-green-400"
+                >
+                  Approved
+                </SelectItem>
+                <SelectItem
+                  value="rejected"
+                  className="text-red-400 focus:bg-slate-700 focus:text-red-400"
+                >
+                  Rejected
+                </SelectItem>
+              </SelectContent>
+            </Select>
 
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="text-slate-400 hover:text-white hover:bg-slate-800"
-        onClick={() => setSelectedLeads(new Set())}
-      >
-        Cancel
-      </Button>
-    </div>
-  </div>
-)}
-
-      
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-slate-400 hover:text-white hover:bg-slate-800"
+              onClick={() => setSelectedLeads(new Set())}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

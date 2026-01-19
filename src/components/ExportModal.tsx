@@ -23,7 +23,10 @@ interface ExportModalProps {
 
 export const ExportModal = ({ isOpen, onClose, filters }: ExportModalProps) => {
   const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState(format(new Date(), "yyyy-MM-dd"));
+
+  const [toDate, setToDate] = useState(
+    format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -32,17 +35,19 @@ export const ExportModal = ({ isOpen, onClose, filters }: ExportModalProps) => {
         .getLastDownload()
         .then((res) => {
           if (res.lastDownload) {
-            setFromDate(format(new Date(res.lastDownload), "yyyy-MM-dd"));
+            setFromDate(
+              format(new Date(res.lastDownload), "yyyy-MM-dd'T'HH:mm:ss"),
+            );
           } else {
             const d = new Date();
             d.setDate(d.getDate() - 30);
-            setFromDate(format(d, "yyyy-MM-dd"));
+            setFromDate(format(d, "yyyy-MM-dd'T'HH:mm:ss"));
           }
         })
         .catch(() => {
           const d = new Date();
           d.setDate(d.getDate() - 30);
-          setFromDate(format(d, "yyyy-MM-dd"));
+          setFromDate(format(d, "yyyy-MM-dd'T'HH:mm:ss"));
         });
     }
   }, [isOpen]);
@@ -90,12 +95,15 @@ export const ExportModal = ({ isOpen, onClose, filters }: ExportModalProps) => {
 
         <div className="space-y-5 mt-2">
           <div>
-            <Label className="text-sm font-medium">From Date</Label>
+            <Label className="text-sm font-medium">
+              From Date & Time (with seconds)
+            </Label>
             <div className="relative">
               <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 disabled
-                type="date"
+                type="datetime-local"
+                step="1"
                 className="pl-9"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
@@ -104,12 +112,15 @@ export const ExportModal = ({ isOpen, onClose, filters }: ExportModalProps) => {
           </div>
 
           <div>
-            <Label className="text-sm font-medium">To Date</Label>
+            <Label className="text-sm font-medium">
+              To Date & Time (with seconds)
+            </Label>
             <div className="relative">
               <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 disabled
-                type="date"
+                type="datetime-local"
+                step="1"
                 className="pl-9"
                 min={fromDate}
                 value={toDate}
