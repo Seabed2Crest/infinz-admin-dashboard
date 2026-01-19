@@ -291,7 +291,8 @@ const handleBulkUpdate = (newStatus: string) => {
   // CARD VIEW - Improved with collapsible sections
   const renderCardView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-      {users.map((user: any) => {
+      {users.map((user: any,  index: number) => {
+          const sNo = (page - 1) * limit + (index + 1);
         const age = calculateAge(user.dateOfBirth);
         const formattedSysDate = formatDateTime(user.sysDate);
         const formattedDOB = formatDate(user.dateOfBirth);
@@ -578,9 +579,9 @@ const handleBulkUpdate = (newStatus: string) => {
                     <p className="text-xs text-gray-500 mb-1">Created Date</p>
                     <p className="text-gray-800 text-sm">{formattedSysDate}</p>
 
-                    <p className="text-xs text-gray-500 mt-3 mb-1">Customer ID</p>
+                    <p className="text-xs text-gray-500 mt-3 mb-1">S.no</p>
                     <p className="text-gray-800 font-mono text-xs truncate">
-                      {getValueOrNA(user.customerId)}
+                      {/* {getValueOrNA(user.customerId)} */}  {sNo}
                     </p>
                   </div>
                 </div>
@@ -621,7 +622,7 @@ const handleBulkUpdate = (newStatus: string) => {
         <Table className="min-w-[2500px]">
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[120px] sticky left-0 bg-white z-10">Customer ID</TableHead>
+              <TableHead className="min-w-[120px] sticky left-0 bg-white z-10">S.no</TableHead>
               <TableHead className="min-w-[150px]">Created Date</TableHead>
               <TableHead className="min-w-[100px]">Source</TableHead>
               <TableHead className="min-w-[180px]">Full Name</TableHead>
@@ -651,7 +652,8 @@ const handleBulkUpdate = (newStatus: string) => {
           </TableHeader>
 
           <TableBody>
-            {users.map((user: any) => {
+            {users.map((user: any, index: number) => {
+               const sNo = (page - 1) * limit + (index + 1);
               const age = calculateAge(user.dateOfBirth);
               const formattedSysDate = formatDateTime(user.sysDate);
               const formattedDOB = formatDate(user.dateOfBirth);
@@ -664,7 +666,7 @@ const handleBulkUpdate = (newStatus: string) => {
               return (
                 <TableRow key={user._id} className="hover:bg-gray-50 transition">
                   <TableCell className="text-xs font-mono sticky left-0 bg-white z-10">
-                    {getValueOrNA(user.customerId)}
+                    {/* {getValueOrNA(user.customerId)} */}  {sNo}
                   </TableCell>
                   <TableCell className="text-sm">{formattedSysDate}</TableCell>
                   <TableCell className="capitalize text-sm">
