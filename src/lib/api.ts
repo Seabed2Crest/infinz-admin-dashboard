@@ -1,7 +1,7 @@
 //api.ts
 // API Configuration
-// const API_BASE_URL = "https://backend.infinz.seabed2crest.com/api/v1";
-export const API_BASE_URL = "http://localhost:8085/api/v1";
+const API_BASE_URL = "https://backend.infinz.seabed2crest.com/api/v1";
+// export const API_BASE_URL = "http://localhost:8085/api/v1";
 // ⭐ NEW: Testimonial Type
 export interface Testimonial {
   _id?: string;
