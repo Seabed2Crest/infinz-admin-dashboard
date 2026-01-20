@@ -216,6 +216,35 @@ const UTMForm = ({
         }
   );
 
+  // Helper to format labels (e.g., bankName -> Bank Name)
+  const formatLabel = (key: string) => {
+    const result = key.replace(/([A-Z])/g, " $1");
+    return result.charAt(0).toUpperCase() + result.slice(1);
+  };
+
+  // ======================
+  // CONDITIONS LOGIC
+  // ======================
+  const addCondition = () => {
+    setFormData((prev) => ({
+      ...prev,
+      conditions: [...prev.conditions, { key: "", value: "" }],
+    }));
+  };
+
+  const updateCondition = (index: number, field: "key" | "value", val: string) => {
+    const newConditions = [...formData.conditions];
+    newConditions[index][field] = val;
+    setFormData((prev) => ({ ...prev, conditions: newConditions }));
+  };
+
+  const removeCondition = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      conditions: prev.conditions.filter((_, i) => i !== index),
+    }));
+  };
+
   // ======================
   // BANK LOGO UPLOAD (S3)
   // ======================
@@ -339,7 +368,7 @@ const UTMForm = ({
                 {["priority", "bankName", "loanAmountMin", "loanAmountMax",
                   "salary", "ageMin", "ageMax"].map((field: any) => (
                   <div key={field}>
-                    <Label>{field}</Label>
+                    <Label>{formatLabel(field)}</Label>
                     <Input
                       name={field}
                       value={(formData as any)[field]}
@@ -440,6 +469,51 @@ const UTMForm = ({
                   </div>
                 </>
               )}
+
+              {/* ADDITIONAL CONDITIONS */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Additional Conditions</Label>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={addCondition}
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Add Condition
+                  </Button>
+                </div>
+                
+                {formData.conditions.map((condition, index) => (
+                  <div key={index} className="flex gap-4 items-end border p-3 rounded-md bg-gray-50">
+                    <div className="flex-1">
+                      <Label className="text-xs">Condition Name (Key)</Label>
+                      <Input
+                        placeholder="Enter condition key"
+                        value={condition.key}
+                        onChange={(e) => updateCondition(index, "key", e.target.value)}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-xs">Condition Value</Label>
+                      <Input
+                        placeholder="Enter condition value"
+                        value={condition.value}
+                        onChange={(e) => updateCondition(index, "value", e.target.value)}
+                      />
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-red-500"
+                      onClick={() => removeCondition(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
 
               {/* UTM */}
               <div>
