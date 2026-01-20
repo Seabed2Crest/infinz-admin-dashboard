@@ -1,4 +1,4 @@
-//User.tsx
+// Users.tsx
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -42,6 +42,7 @@ import {
   IndianRupee,
   User,
   FileText,
+  Link as LinkIcon,
 } from "lucide-react";
 import { adminApi } from "@/lib/api";
 import { ExportModal } from "@/components/ExportModal";
@@ -431,6 +432,23 @@ const Users = () => {
                       </p>
                     </div>
                   </div>
+
+                  {user.assignedUtmLink && (
+                    <div className="flex items-start space-x-3">
+                      <LinkIcon className="h-4 w-4 text-gray-400 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-gray-500">UTM Link</p>
+                        <a
+                          href={user.assignedUtmLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-sm truncate block"
+                        >
+                          {user.assignedUtmLink}
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Loan Details */}
@@ -714,6 +732,7 @@ const Users = () => {
               <TableHead className="min-w-[120px]">Date of Birth</TableHead>
               <TableHead className="min-w-[120px]">PAN Card</TableHead>
               <TableHead className="min-w-[100px]">Pincode</TableHead>
+              <TableHead className="min-w-[200px]">UTM Link</TableHead>
               <TableHead className="min-w-[120px]">Loan Type</TableHead>
               <TableHead className="min-w-[150px]">
                 Required Loan Amount
@@ -794,6 +813,20 @@ const Users = () => {
                   </TableCell>
                   <TableCell className="text-sm">
                     {getValueOrNA(user.pincode)}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {user.assignedUtmLink ? (
+                      <a
+                        href={user.assignedUtmLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline truncate block max-w-[200px]"
+                      >
+                        {user.assignedUtmLink}
+                      </a>
+                    ) : (
+                      ""
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge
