@@ -75,6 +75,8 @@ const Users = () => {
   const [selectedPincode, setSelectedPincode] = useState("");
   const [pincodeDropdownOpen, setPincodeDropdownOpen] = useState(false);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [isSelectingAll, setIsSelectingAll] = useState(false);
+  const [allLeadsSelected, setAllLeadsSelected] = useState(false);
 
   const limit = 10;
 
@@ -274,22 +276,90 @@ const Users = () => {
     statusMutation.mutate({ loanId, loanType, status: newStatus });
   };
 
-  const handleSelectAllOnPage = () => {
-    const pageLeadKeys = users.map((u: any) => `${u._id}|${u.loanType}`);
+  // const handleSelectAllOnPage = async () => {
+  //   if (allLeadsSelected) {
+  //     setSelectedLeads(new Set());
+  //     setAllLeadsSelected(false);
+  //     return;
+  //   }
 
-    const allSelected = pageLeadKeys.every((key) => selectedLeads.has(key));
+  //   setIsSelectingAll(true);
+  //   try {
+  //     const allLeads = new Set<string>();
+      
+  //     for (let currentPage = 1; currentPage <= totalPages; currentPage++) {
+  //       const response = await adminApi.getUsers({
+  //         search: debouncedSearch,
+  //         pincode: selectedPincode,
+  //         loanType: loanTypeFilter,
+  //         platform: platformFilter,
+  //         ageRange: ageFilter,
+  //         salaryRange,
+  //         loanAmountRange,
+  //         fromDate,
+  //         toDate,
+  //         page: currentPage,
+  //         limit,
+  //       });
 
-    if (allSelected) {
-      const newSelectedLeads = new Set(selectedLeads);
-      pageLeadKeys.forEach((key) => newSelectedLeads.delete(key));
-      setSelectedLeads(newSelectedLeads);
-    } else {
-      const newSelectedLeads = new Set(selectedLeads);
-      pageLeadKeys.forEach((key) => newSelectedLeads.add(key));
-      setSelectedLeads(newSelectedLeads);
+  //       const pageUsers = response?.data?.users || [];
+  //       pageUsers.forEach((u: any) => {
+  //         allLeads.add(`${u._id}|${u.loanType}`);
+  //       });
+  //     }
+
+  //     setSelectedLeads(allLeads);
+  //     setAllLeadsSelected(true);
+  //     toast.success(`Selected all ${allLeads.size} leads across ${totalPages} pages`);
+  //   } catch (error) {
+  //     console.error("Error selecting all leads:", error);
+  //     toast.error("Failed to select all leads");
+  //   } finally {
+  //     setIsSelectingAll(false);
+  //   }
+  // };
+
+const handleSelectAll = async () => {
+    setIsSelectingAll(true);
+    try {
+      const allLeads = new Set<string>();
+      
+      for (let currentPage = 1; currentPage <= totalPages; currentPage++) {
+        const response = await adminApi.getUsers({
+          search: debouncedSearch,
+          pincode: selectedPincode,
+          loanType: loanTypeFilter,
+          platform: platformFilter,
+          ageRange: ageFilter,
+          salaryRange,
+          loanAmountRange,
+          fromDate,
+          toDate,
+          page: currentPage,
+          limit,
+        });
+
+        const pageUsers = response?.data?.users || [];
+        pageUsers.forEach((u: any) => {
+          allLeads.add(`${u._id}|${u.loanType}`);
+        });
+      }
+
+      setSelectedLeads(allLeads);
+      setAllLeadsSelected(true);
+      toast.success(`Selected all ${allLeads.size} leads`);
+    } catch (error) {
+      toast.error("Failed to select all leads");
+    } finally {
+      setIsSelectingAll(false);
     }
   };
 
+  const handleDeselectAll = () => {
+    setSelectedLeads(new Set());
+    setAllLeadsSelected(false);
+    toast.info("All selections cleared");
+  };
   const bulkStatusMutation = useMutation({
     mutationFn: (
       updates: Array<{ loanId: string; loanType: string; status: string }>,
@@ -297,6 +367,7 @@ const Users = () => {
     onSuccess: (response) => {
       toast.success(response.message || "Bulk update successful");
       setSelectedLeads(new Set());
+      setAllLeadsSelected(false);
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (error: any) => {
@@ -315,6 +386,7 @@ const Users = () => {
       } else {
         next.add(key);
       }
+      setAllLeadsSelected(false);
       return next;
     });
   };
@@ -907,9 +979,7 @@ const Users = () => {
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={Array.from(selectedLeads).some(
-                          (l) => l.id === user._id,
-                        )}
+                        checked={selectedLeads.has(`${user._id}|${user.loanType}`)}
                         onChange={() =>
                           toggleLeadSelection(user._id, user.loanType)
                         }
@@ -1225,20 +1295,36 @@ const Users = () => {
 
       {/* VIEW TOGGLE */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-600">
+        <div className="flex items-center gap-2">
+          <div className="text-sm text-gray-600 mr-2">
             Showing {users.length} of {total} results
           </div>
+          
           <Button
             variant="outline"
             size="sm"
-            onClick={handleSelectAllOnPage}
-            className={`text-xs h-8 ${users.length > 0 && users.every((u: any) => selectedLeads.has(`${u._id}|${u.loanType}`)) ? "bg-blue-50 border-blue-200 text-blue-600" : ""}`}
+            onClick={handleSelectAll}
+            disabled={isSelectingAll || (allLeadsSelected && selectedLeads.size > 0)}
+            className="text-xs h-8 border-blue-200 text-blue-600 hover:bg-blue-50"
           >
-            {users.length > 0 &&
-            users.every((u: any) => selectedLeads.has(`${u._id}|${u.loanType}`))
-              ? "Deselect All Page"
-              : "Select All on Page"}
+            {isSelectingAll ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                Selecting...
+              </>
+            ) : (
+              `Select All ${total} Leads`
+            )}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDeselectAll}
+            disabled={selectedLeads.size === 0}
+            className="text-xs h-8 border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
+            Deselect All
           </Button>
         </div>
 
@@ -1332,7 +1418,9 @@ const Users = () => {
             <div className="bg-blue-500 text-white text-xs font-bold h-6 w-6 flex items-center justify-center rounded-full">
               {selectedLeads.size}
             </div>
-            <span className="text-sm font-medium">Leads Selected</span>
+            <span className="text-sm font-medium">
+              {allLeadsSelected ? `All ${total} Leads Selected` : "Leads Selected"}
+            </span>
           </div>
 
           <div className="h-8 w-px bg-slate-700" />
@@ -1374,7 +1462,10 @@ const Users = () => {
               variant="ghost"
               size="sm"
               className="text-slate-400 hover:text-white hover:bg-slate-800"
-              onClick={() => setSelectedLeads(new Set())}
+              onClick={() => {
+                setSelectedLeads(new Set());
+                setAllLeadsSelected(false);
+              }}
             >
               Cancel
             </Button>
