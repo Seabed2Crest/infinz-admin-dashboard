@@ -234,7 +234,8 @@ const Layout = () => {
             <SidebarTrigger />
 
             <h2 className="text-sm font-semibold capitalize">
-              {location.pathname.replace("/admin/", "").replace("-", " ") || "Dashboard"}
+              {/* {location.pathname.replace("/admin/", "").replace("-", " ") || "Dashboard"} */}
+               {location.pathname.replace("/admin/", "").replace("/", "").replace("-", " ") || "Dashboard"}
             </h2>
 
             <Avatar>
