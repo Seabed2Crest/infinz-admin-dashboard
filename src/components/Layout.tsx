@@ -113,7 +113,7 @@ const AppSidebar = () => {
     <Sidebar className="border-r">
       {/* HEADER */}
       <SidebarHeader className="border-b p-4 h-16 flex items-center">
-        <img src={infinzLogo} alt="Logo" className="h-8" />
+        <img src={infinzLogo} alt="Logo" className="h-11" />
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-4">
