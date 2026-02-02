@@ -786,254 +786,259 @@ const handleSelectAll = async () => {
   );
 
   // TABLE VIEW - Improved with horizontal scroll container
-  const renderTableView = () => (
-    <div className="w-full overflow-hidden">
-      <div className="overflow-x-auto border rounded-lg">
-        <Table className="min-w-[2500px]">
-          <TableHeader>
-            <TableRow>
-              {/* <TableHead className="min-w-[120px] sticky left-0 bg-white z-10">S.no</TableHead> */}
-              <TableHead className="min-w-[60px] w-[60px] sticky left-0 bg-white z-10">
-                S.no
-              </TableHead>
-              <TableHead className="min-w-[150px]">Created Date</TableHead>
-              <TableHead className="min-w-[100px]">Source</TableHead>
-              <TableHead className="min-w-[180px]">Full Name</TableHead>
-              <TableHead className="min-w-[140px]">Phone Number</TableHead>
-              <TableHead className="min-w-[200px]">Email</TableHead>
-              <TableHead className="min-w-[120px]">Date of Birth</TableHead>
-              <TableHead className="min-w-[120px]">PAN Card</TableHead>
-              <TableHead className="min-w-[100px]">Pincode</TableHead>
-              <TableHead className="min-w-[200px]">UTM Link</TableHead>
-              <TableHead className="min-w-[120px]">Loan Type</TableHead>
-              <TableHead className="min-w-[150px]">
-                Required Loan Amount
-              </TableHead>
-              <TableHead className="min-w-[120px]">EMI Tenure</TableHead>
-              <TableHead className="min-w-[140px]">Employment Type</TableHead>
-              <TableHead className="min-w-[150px]">
-                Net Monthly Income
-              </TableHead>
-              <TableHead className="min-w-[160px]">
-                Salary Payment Mode
-              </TableHead>
-              <TableHead className="min-w-[200px]">Company Name</TableHead>
-              <TableHead className="min-w-[130px]">Company Pincode</TableHead>
-              <TableHead className="min-w-[180px]">
-                Salary Slip / Bank Statement
-              </TableHead>
-              <TableHead className="min-w-[200px]">Business Name</TableHead>
-              <TableHead className="min-w-[140px]">Company Type</TableHead>
-              <TableHead className="min-w-[150px]">Annual Turnover</TableHead>
-              <TableHead className="min-w-[200px]">
-                Industry / Nature of Business
-              </TableHead>
-              <TableHead className="min-w-[200px]">
-                Business Registration Number
-              </TableHead>
-              <TableHead className="min-w-[160px]">
-                Date of Incorporation
-              </TableHead>
-              <TableHead className="min-w-[160px]">
-                Business/Company Pincode
-              </TableHead>
-              <TableHead className="min-w-[100px]">Status</TableHead>
-            </TableRow>
-          </TableHeader>
+const renderTableView = () => (
+  <div className="w-full overflow-hidden">
+    <div className="overflow-x-auto border rounded-lg">
+      <Table className="min-w-[2500px]">
+        <TableHeader>
+          <TableRow>
+            {/* ✅ User ID Column */}
+            <TableHead className="min-w-[80px] w-[80px] sticky left-0 bg-white z-10">
+              User ID
+            </TableHead>
+            <TableHead className="min-w-[150px]">Created Date</TableHead>
+            <TableHead className="min-w-[100px]">Source</TableHead>
+            <TableHead className="min-w-[180px]">Full Name</TableHead>
+            <TableHead className="min-w-[140px]">Phone Number</TableHead>
+            <TableHead className="min-w-[200px]">Email</TableHead>
+            <TableHead className="min-w-[120px]">Date of Birth</TableHead>
+            <TableHead className="min-w-[120px]">PAN Card</TableHead>
 
-          <TableBody>
-            {users.map((user: any, index: number) => {
-              const sNo = (page - 1) * limit + (index + 1);
-              const age = calculateAge(user.dateOfBirth);
-              const formattedSysDate = formatDateTime(user.sysDate);
-              const formattedDOB = formatDate(user.dateOfBirth);
-              const formattedIncorporationDate = formatDate(
-                user.dateOfIncorporationStartDate,
-              );
-              const formattedLoanAmount = formatAmount(user.requiredLoanAmount);
-              const formattedIncome = formatAmount(user.netMonthlyIncome);
-              const formattedTurnover = formatAmount(user.annualTurnover);
-              const isBusinessLoan = user.loanType === "Business Loan";
+            {/* ✅ TWO PINCODE COLUMNS */}
+            <TableHead className="min-w-[140px]">Personal Pincode</TableHead>
+            <TableHead className="min-w-[180px]">
+              Company/Business Pincode
+            </TableHead>
 
-              return (
-                <TableRow
-                  key={user._id}
-                  className="hover:bg-gray-50 transition"
-                >
-                  {/* <TableCell className="text-xs font-mono sticky left-0 bg-white z-10"> */}
-                  <TableCell className="text-xs font-medium w-[60px] sticky left-0 bg-white z-10 text-center">
-                    {/* {getValueOrNA(user.customerId)} */} {sNo}
-                  </TableCell>
-                  <TableCell className="text-sm">{formattedSysDate}</TableCell>
-                  <TableCell className="capitalize text-sm">
-                    {getValueOrNA(user.source)}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {getValueOrNA(user.fullName)}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {getValueOrNA(user.phoneNumber)}
-                  </TableCell>
-                  <TableCell className="text-sm truncate max-w-[200px]">
-                    {getValueOrNA(user.email)}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {formattedDOB} {age ? `(${age})` : ""}
-                  </TableCell>
-                  <TableCell className="uppercase text-sm">
-                    {getValueOrNA(user.panCard)}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {getValueOrNA(user.pincode)}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {user.assignedUtmLink ? (
-                      <a
-                        href={user.assignedUtmLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline truncate block max-w-[200px]"
-                      >
-                        {user.assignedUtmLink}
-                      </a>
-                    ) : (
-                      ""
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={`${
-                        isBusinessLoan
-                          ? "bg-purple-100 text-purple-800 border-purple-200"
-                          : "bg-blue-100 text-blue-800 border-blue-200"
-                      } border-0 text-xs capitalize`}
+            <TableHead className="min-w-[200px]">UTM Link</TableHead>
+            <TableHead className="min-w-[120px]">Loan Type</TableHead>
+            <TableHead className="min-w-[150px]">
+              Required Loan Amount
+            </TableHead>
+            <TableHead className="min-w-[120px]">EMI Tenure</TableHead>
+            <TableHead className="min-w-[140px]">Employment Type</TableHead>
+            <TableHead className="min-w-[150px]">
+              Net Monthly Income
+            </TableHead>
+            <TableHead className="min-w-[160px]">
+              Salary Payment Mode
+            </TableHead>
+            <TableHead className="min-w-[200px]">Company Name</TableHead>
+            <TableHead className="min-w-[180px]">
+              Salary Slip / Bank Statement
+            </TableHead>
+            <TableHead className="min-w-[200px]">Business Name</TableHead>
+            <TableHead className="min-w-[140px]">Company Type</TableHead>
+            <TableHead className="min-w-[150px]">Annual Turnover</TableHead>
+            <TableHead className="min-w-[200px]">
+              Industry / Nature of Business
+            </TableHead>
+            <TableHead className="min-w-[200px]">
+              Business Registration Number
+            </TableHead>
+            <TableHead className="min-w-[160px]">
+              Date of Incorporation
+            </TableHead>
+            <TableHead className="min-w-[100px]">Status</TableHead>
+          </TableRow>
+        </TableHeader>
+
+        <TableBody>
+          {users.map((user: any) => {
+            const age = calculateAge(user.dateOfBirth);
+            const formattedSysDate = formatDateTime(user.sysDate);
+            const formattedDOB = formatDate(user.dateOfBirth);
+            const formattedIncorporationDate = formatDate(
+              user.dateOfIncorporationStartDate,
+            );
+            const formattedLoanAmount = formatAmount(user.requiredLoanAmount);
+            const formattedIncome = formatAmount(user.netMonthlyIncome);
+            const formattedTurnover = formatAmount(user.annualTurnover);
+            const isBusinessLoan = user.loanType === "Business Loan";
+
+            return (
+              <TableRow
+                key={user._id}
+                className="hover:bg-gray-50 transition"
+              >
+                {/* ✅ User ID from backend */}
+                <TableCell className="text-sm font-semibold w-[80px] sticky left-0 bg-white z-10 text-center">
+                  {user.sNo || "N/A"}
+                </TableCell>
+
+                <TableCell className="text-sm">{formattedSysDate}</TableCell>
+                <TableCell className="capitalize text-sm">
+                  {getValueOrNA(user.source)}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {getValueOrNA(user.fullName)}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {getValueOrNA(user.phoneNumber)}
+                </TableCell>
+                <TableCell className="text-sm truncate max-w-[200px]">
+                  {getValueOrNA(user.email)}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {formattedDOB} {age ? `(${age})` : ""}
+                </TableCell>
+                <TableCell className="uppercase text-sm">
+                  {getValueOrNA(user.panCard)}
+                </TableCell>
+
+                {/* ✅ TWO PINCODE CELLS */}
+                <TableCell className="text-sm">
+                  {getValueOrNA(user.personalPincode)}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {isBusinessLoan
+                    ? getValueOrNA(user.businessCompanyPincode)
+                    : getValueOrNA(user.companyPincode)}
+                </TableCell>
+
+                <TableCell className="text-sm">
+                  {user.assignedUtmLink ? (
+                    <a
+                      href={user.assignedUtmLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline truncate block max-w-[200px]"
                     >
-                      {getValueOrNA(user.loanType)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm font-medium">
-                    {formattedLoanAmount}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {getValueOrNA(user.emiTenure)}
-                  </TableCell>
-                  <TableCell className="capitalize text-sm">
-                    {getValueOrNA(user.employmentType)}
-                  </TableCell>
-                  <TableCell className="text-sm">{formattedIncome}</TableCell>
-                  <TableCell className="text-sm">
-                    {getValueOrNA(user.salaryPaymentMode)}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {!isBusinessLoan ? getValueOrNA(user.companyName) : "N/A"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {!isBusinessLoan
-                      ? getValueOrNA(user.companyPincode)
-                      : "N/A"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {user.salarySlipBankStatement ? (
-                      <a
-                        href={user.salarySlipBankStatement}
-                        className="text-blue-600 underline inline-flex items-center text-sm"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      {user.assignedUtmLink}
+                    </a>
+                  ) : (
+                    ""
+                  )}
+                </TableCell>
+
+                <TableCell>
+                  <Badge
+                    variant="outline"
+                    className={`${
+                      isBusinessLoan
+                        ? "bg-purple-100 text-purple-800 border-purple-200"
+                        : "bg-blue-100 text-blue-800 border-blue-200"
+                    } border-0 text-xs capitalize`}
+                  >
+                    {getValueOrNA(user.loanType)}
+                  </Badge>
+                </TableCell>
+
+                <TableCell className="text-sm font-medium">
+                  {formattedLoanAmount}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {getValueOrNA(user.emiTenure)}
+                </TableCell>
+                <TableCell className="capitalize text-sm">
+                  {getValueOrNA(user.employmentType)}
+                </TableCell>
+                <TableCell className="text-sm">{formattedIncome}</TableCell>
+                <TableCell className="text-sm">
+                  {getValueOrNA(user.salaryPaymentMode)}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {!isBusinessLoan ? getValueOrNA(user.companyName) : "N/A"}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {user.salarySlipBankStatement ? (
+                    <a
+                      href={user.salarySlipBankStatement}
+                      className="text-blue-600 underline inline-flex items-center text-sm"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      View
+                    </a>
+                  ) : (
+                    "N/A"
+                  )}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {isBusinessLoan ? getValueOrNA(user.businessName) : "N/A"}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {isBusinessLoan ? getValueOrNA(user.companyType) : "N/A"}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {isBusinessLoan ? formattedTurnover : "N/A"}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {isBusinessLoan
+                    ? getValueOrNA(user.industryNatureOfBusiness)
+                    : "N/A"}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {isBusinessLoan
+                    ? getValueOrNA(user.businessRegistrationNumber)
+                    : "N/A"}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {isBusinessLoan ? formattedIncorporationDate : "N/A"}
+                </TableCell>
+
+                <TableCell>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedLeads.has(`${user._id}|${user.loanType}`)}
+                      onChange={() =>
+                        toggleLeadSelection(user._id, user.loanType)
+                      }
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <Select
+                      value={user.status || "pending"}
+                      onValueChange={(val) =>
+                        handleStatusUpdate(user._id, user.loanType, val)
+                      }
+                      disabled={statusMutation.isPending}
+                    >
+                      <SelectTrigger
+                        className={`h-8 w-[110px] text-xs font-semibold ${
+                          user.status === "approved"
+                            ? "text-green-600 border-green-200"
+                            : user.status === "rejected"
+                              ? "text-red-600 border-red-200"
+                              : "text-yellow-600 border-yellow-200"
+                        }`}
                       >
-                        <FileText className="h-3 w-3 mr-1" />
-                        View
-                      </a>
-                    ) : (
-                      "N/A"
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {isBusinessLoan ? getValueOrNA(user.businessName) : "N/A"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {isBusinessLoan ? getValueOrNA(user.companyType) : "N/A"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {isBusinessLoan ? formattedTurnover : "N/A"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {isBusinessLoan
-                      ? getValueOrNA(user.industryNatureOfBusiness)
-                      : "N/A"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {isBusinessLoan
-                      ? getValueOrNA(user.businessRegistrationNumber)
-                      : "N/A"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {isBusinessLoan ? formattedIncorporationDate : "N/A"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {isBusinessLoan
-                      ? getValueOrNA(user.businessCompanyPincode)
-                      : "N/A"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedLeads.has(`${user._id}|${user.loanType}`)}
-                        onChange={() =>
-                          toggleLeadSelection(user._id, user.loanType)
-                        }
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
-                      <Select
-                        value={user.status || "pending"}
-                        onValueChange={(val) =>
-                          handleStatusUpdate(user._id, user.loanType, val)
-                        }
-                        disabled={statusMutation.isPending}
-                      >
-                        <SelectTrigger
-                          className={`h-8 w-[110px] text-xs font-semibold ${
-                            user.status === "approved"
-                              ? "text-green-600 border-green-200"
-                              : user.status === "rejected"
-                                ? "text-red-600 border-red-200"
-                                : "text-yellow-600 border-yellow-200"
-                          }`}
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem
+                          value="pending"
+                          className="text-yellow-600"
                         >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem
-                            value="pending"
-                            className="text-yellow-600"
-                          >
-                            Pending
-                          </SelectItem>
-                          <SelectItem
-                            value="approved"
-                            className="text-green-600"
-                          >
-                            Approved
-                          </SelectItem>
-                          <SelectItem value="rejected" className="text-red-600">
-                            Rejected
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="mt-2 text-xs text-gray-500 text-center">
-        Scroll horizontally to view all columns →
-      </div>
+                          Pending
+                        </SelectItem>
+                        <SelectItem
+                          value="approved"
+                          className="text-green-600"
+                        >
+                          Approved
+                        </SelectItem>
+                        <SelectItem value="rejected" className="text-red-600">
+                          Rejected
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
-  );
+
+    <div className="mt-2 text-xs text-gray-500 text-center">
+      Scroll horizontally to view all columns →
+    </div>
+  </div>
+);
+
 
   return (
     <div className="space-y-6">
