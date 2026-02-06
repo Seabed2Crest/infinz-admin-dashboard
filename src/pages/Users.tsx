@@ -629,7 +629,7 @@ const handleSelectAll = async () => {
                     <div>
                       <p className="text-xs text-gray-500">Pincode</p>
                       <p className="text-gray-800 font-medium text-sm">
-                        {getValueOrNA(user.pincode)}
+                        {getValueOrNA(user.personalPincode)}
                       </p>
                     </div>
                   </div>
