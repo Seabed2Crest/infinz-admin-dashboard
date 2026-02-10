@@ -10,6 +10,7 @@ import {
   Key,
   ShieldCheck,
   ReceiptText,
+  UserCheck,
 } from "lucide-react";
 
 import {
@@ -50,6 +51,14 @@ const mainMenu = [
     module: "leads",
     action: "view",
   },
+  {
+    icon: UserCheck,
+    label: "Users",
+    path: "/users",
+    module: "leads",  // Using "users" module for permissions
+    action: "view",
+  },
+
   {
     icon: ShieldCheck,
     label: "Roles & Permissions",
