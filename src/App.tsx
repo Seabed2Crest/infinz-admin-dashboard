@@ -31,6 +31,7 @@ import UtmLink from "./pages/LoanTable";
 import FinancialDictionaryAdmin from "./pages/financial-dictionary";
 import NewsAdmin from "./pages/NewsAdmin";
 import AddEditTestimonial from "./pages/AddTestimonial";
+import IncompleteUsers from "./pages/IncompleteUsersPage";
 
 const queryClient = new QueryClient();
 
@@ -154,6 +155,7 @@ const App = () => (
               path="business-management"
               element={<BusinessManagement />}
             />
+            <Route path="users" element={<IncompleteUsers />} />
 
             {/* LEADS MGMT */}
             <Route path="leads-management" element={<LeadsManagement />} />

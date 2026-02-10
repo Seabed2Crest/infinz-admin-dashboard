@@ -890,6 +890,15 @@ async bulkUpdateLeadStatus(updates: Array<{ loanId: string; loanType: string; st
   }
 }
 
+function getAuthHeaders(): HeadersInit {
+  const adminToken = localStorage.getItem("adminToken");
+  return {
+    "Content-Type": "application/json",
+    ...(adminToken && { Authorization: `Bearer ${adminToken}` }),
+  };
+}
+
+
 // Create and export API client instance
 export const apiClient = new ApiClient(API_BASE_URL);
 
@@ -1000,6 +1009,32 @@ export const adminApi = {
     loanType: string;
     status: string;
   }[]) => apiClient.bulkUpdateLeadStatus(updates),
+
+  getIncompleteUsers: async (params?: { search?: string; page?: number; limit?: number; }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append("search", params.search);
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/admin/incomplete-users?${queryParams}`, {
+      headers: getAuthHeaders(),
+    });
+    return response.json();
+  },
+
+  exportIncompleteUsers: async (search: string = "") => {
+    const adminData = JSON.parse(localStorage.getItem("adminData") || "{}");
+    const queryParams = new URLSearchParams({
+      search,
+      employeeId: adminData?._id || "",
+      employeeName: adminData?.fullName || "",
+    });
+
+    const response = await fetch(`${API_BASE_URL}/admin/export/incomplete-users?${queryParams}`, {
+      headers: getAuthHeaders(),
+    });
+    return response.blob();
+  },
   
 };
 
